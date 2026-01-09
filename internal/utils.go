@@ -55,3 +55,11 @@ func LocalIP(ip string) string {
 	}
 	return ip
 }
+
+func confirm(msg string) bool {
+	var ans string
+	logger.Info("%s (y/n): ", msg)
+	fmt.Scanln(&ans)
+	ans = strings.ToLower(ans)
+	return ans == "y" || ans == "yes"
+}

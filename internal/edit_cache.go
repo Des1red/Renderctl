@@ -3,9 +3,30 @@ package internal
 import (
 	"fmt"
 	"strings"
+	"tvctrl/internal/avtransport"
 	"tvctrl/internal/cache"
 	"tvctrl/logger"
 )
+
+func storeInCache(cfg *Config, target *avtransport.Target) {
+	if !cfg.AutoCache {
+		if !confirm("Store this AVTransport endpoint in cache?") {
+			return
+		}
+	}
+	store, _ := cache.Load()
+	dev := store[cfg.TIP]
+
+	if dev.ControlURL == "" {
+		dev.ControlURL = target.ControlURL
+	}
+	if dev.Vendor == "" {
+		dev.Vendor = cfg.TVVendor
+	}
+
+	store[cfg.TIP] = dev
+	_ = cache.Save(store)
+}
 
 func HandleCacheCommands(cfg Config) bool {
 	if cfg.ListCache {

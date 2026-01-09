@@ -1,13 +1,17 @@
 package internal
 
 type Config struct {
-	Mode        string // "auto" | "manual"
-	ProbeOnly   bool
+	Mode      string // "auto" | "manual"
+	ProbeOnly bool
+	Discover  bool
+
+	AutoCache   bool
 	UseCache    bool
 	ForgetCache string // "", "all", or IP
 	ListCache   bool
 
-	CachedTv string
+	Subnet string
+
 	TIP      string // TV IP
 	TPort    string // TV SOAP port
 	TPath    string // SOAP path
@@ -22,8 +26,10 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
+	AutoCache: false,
 	UseCache:  false,
 	ProbeOnly: false,
+	Discover:  false,
 	Mode:      "auto",
 	ServePort: "8000",
 	LDir:      "./directory",
