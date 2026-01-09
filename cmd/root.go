@@ -73,6 +73,11 @@ func Execute() {
 
 func init() {
 	initHelpTemplate()
+
+	// ---- VERSION ----
+	rootCmd.Version = Version
+	rootCmd.SetVersionTemplate("tvctrl {{.Version}}\n")
+
 	rootCmd.CompletionOptions.DisableDefaultCmd = false
 
 	// ---- execution flags ----
