@@ -61,8 +61,8 @@ func runAuto(cfg Config) {
 	}
 
 	// 3) Probe fallback
-	err := tryProbe(cfg, true)
-	if err {
+	ok := tryProbe(cfg, true)
+	if !ok {
 		logger.Fatal("Unable to resolve AVTransport endpoint")
 	}
 }
