@@ -249,5 +249,5 @@ It is intentionally simple, explicit, and inspectable.
 
 
 ### Attribution
-This project was originally created by <Des1red>.
+This project was originally created by Des1red.
 If you use or modify this software, attribution is appreciated.
