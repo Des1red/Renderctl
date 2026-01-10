@@ -9,12 +9,19 @@ import (
 )
 
 func (c Config) ControlURL() string {
+	if c._CachedControlURL != "" {
+		return c._CachedControlURL
+	}
+
+	if c.TIP == "" || c.TPort == "" {
+		return ""
+	}
+
 	path := c.TPath
 	if path == "" {
 		path = "/"
 	}
-
-	if len(path) > 0 && path[0] != '/' {
+	if path[0] != '/' {
 		path = "/" + path
 	}
 

@@ -11,6 +11,11 @@ import (
 func runWithConfig(cfg Config) {
 
 	controlURL := cfg.ControlURL()
+	if controlURL == "" {
+		logger.Fatal("No AVTransport ControlURL resolved (internal state error)")
+	} else {
+		logger.Info("Control Url : %s", cfg.ControlURL())
+	}
 
 	if cfg._CachedControlURL != "" {
 		controlURL = cfg._CachedControlURL
@@ -60,7 +65,7 @@ func runAuto(cfg Config) {
 	}
 
 	// 3) Probe fallback
-	ok := tryProbe(cfg)
+	ok := tryProbe(&cfg)
 	if !ok {
 		logger.Fatal("Unable to resolve AVTransport endpoint")
 	}
@@ -101,13 +106,13 @@ func runScan(cfg Config) {
 	}
 
 	// --- Single-IP probe ---
-	tryProbe(cfg)
+	tryProbe(&cfg)
 
 	logger.Success("Mode : Scan , completed")
 }
 
-func tryProbe(cfg Config) bool {
-	ok, err := probeAVTransport(&cfg)
+func tryProbe(cfg *Config) bool {
+	ok, err := probeAVTransport(cfg)
 	if err != nil {
 		logger.Fatal("Error: %v", err)
 	}
