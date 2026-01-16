@@ -3,7 +3,7 @@
 Simple TV controller for sending media via the UPnP AVTransport protocol.
 
 `tvctrl` discovers UPnP/DLNA-compatible TVs on the local network, resolves valid AVTransport endpoints, and sends media to the TV using SOAP requests (`SetAVTransportURI` + `Play`).  
-It supports automatic discovery, probing fallback, **explicit cache selection**, vendor-aware metadata handling, and clean local media serving.
+It supports automatic discovery, probing fallback, **explicit cache selection**, vendor-aware metadata handling, and clean local media serving, and direct streaming mode.
 
 ---
 
@@ -17,6 +17,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 - Expanded AVTransport probing paths
 - Built-in shell autocomplete (optional)
 - Improved cache safety & control flow
+- Dedicated STREAM mode (live + resolved streaming)
 
 ---
 
@@ -77,6 +78,85 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 ---
 
+###Streaming mode (v2)
+
+- Streaming mode is a dedicated execution path designed for reliable DLNA playback without screen mirroring.
+
+- It streams raw media bytes to the TV via a local HTTP endpoint and instructs playback using AVTransport.
+
+- Supported stream types
+
+- tvctrl automatically classifies the -Lf input into one of three stream types:
+
+1. Local file stream
+
+- Example: movie.ts, video.mp4
+
+- File is served locally over HTTP
+
+- TV pulls the media directly
+
+2. External media URL
+
+- Example: https://example.com/video.mp4
+
+- TV pulls the remote media through the local stream proxy
+
+- No transcoding
+
+3. Resolved stream (platforms)
+
+- Example: YouTube URLs
+
+- The URL does not point to raw media
+ 
+- yt-dlp is used to extract audio/video
+ 
+- Media is remuxed to MPEG-TS and streamed live
+ 
+- The TV only ever sees a local /stream URL
+ 
+- How streaming works
+ 
+- Resolve AVTransport ControlURL (cache / SSDP / probe)
+ 
+- Start internal HTTP stream server
+ 
+- Expose /stream endpoint
+ 
+- Send MediaURL to TV via SOAP:
+ 
+- Stop
+ 
+- SetAVTransportURI
+ 
+- Play
+ 
+- TV connects back and pulls the stream
+ 
+- The stream server:
+ 
+- Uses chunked transfer (no Content-Length)
+ 
+- Dynamically observes TV behavior (HEAD / Range)
+ 
+- Disables seeking for live / TS streams
+ 
+- Keeps behavior predictable across vendors
+ 
+- What streaming mode does NOT do
+ 
+- No screen mirroring
+ 
+- No HTML rendering
+ 
+- No JavaScript execution
+ 
+- No browser emulation
+ 
+- No transcoding unless required for compatibility
+ 
+- Streaming mode exists purely to deliver media bytes, not web content.
 ## How it works (high level)
 
 ### 1. SSDP phase (auto mode)
@@ -149,6 +229,15 @@ tvctrl --probe-only -Tip 192.168.1.10
 
     Uses explicit control URL information
 
+### Streaming mode
+ --mode stream -Lf media.ts -Lip 192.168.1.110
+
+ --mode stream -Lf https://www.youtube.com/watch?v=XXXX -Lip 192.168.1.110
+     Starts a live stream server
+     
+     Sends /stream to the TV
+     
+     Handles platform resolution automatically
 ### Command-line options
 ## Execution
 
@@ -192,7 +281,7 @@ tvctrl --probe-only -Tip 192.168.1.10
 
 ## Media
 
-    --Lf Local media file
+    --Lf Local media file or url(explicit to stream mode)
 
     --Lip Local IP for serving media
 
