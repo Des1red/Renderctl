@@ -1,0 +1,134 @@
+===============================
+Streaming Mode (Direct & Resolved)
+===============================
+
+This version introduces a dedicated STREAM mode designed for reliable
+DLNA / UPnP media playback without screen mirroring.
+
+The stream pipeline is built around a simple rule:
+TVs only understand raw media streams, not web pages.
+
+--------------------------------------------------
+1. Stream Types (Automatic Detection)
+--------------------------------------------------
+
+The input passed via -Lf is classified into one of three stream types:
+
+1) StreamFile
+   - Local media file (e.g. movie.ts, video.mp4)
+   - Served directly over the internal HTTP server
+   - TV pulls the file via a MediaURL
+
+2) StreamExternal
+   - Direct media URL (e.g. https://site/video.mp4, .m3u8)
+   - TV pulls bytes directly from the remote source
+   - No processing or transcoding
+
+3) StreamResolved
+   - Media platforms (YouTube, etc.)
+   - The URL does NOT point to raw media
+   - Requires resolution using yt-dlp
+   - Media is extracted and streamed as bytes
+
+Detection logic:
+- YouTube-style URLs → StreamResolved
+- HTTP/HTTPS media URLs → StreamExternal
+- Everything else → StreamFile
+
+--------------------------------------------------
+2. Streaming Architecture
+--------------------------------------------------
+
+The streaming flow is:
+
+1) Resolve AVTransport ControlURL (SSDP / cache / probe)
+2) Start internal HTTP stream server
+3) Expose /stream endpoint
+4) Send MediaURL to TV via SOAP:
+   - STOP (vendor quirk handling)
+   - SetAVTransportURI
+   - Play
+
+The TV then connects back to:
+http://<local-ip>:<port>/stream
+
+--------------------------------------------------
+3. Internal Stream Server
+--------------------------------------------------
+
+The HTTP server:
+- Serves a single streaming endpoint (/stream)
+- Does NOT require Content-Length
+- Uses chunked transfer for live streams
+- Detects TV behavior (HEAD, Range requests)
+
+Headers:
+- Content-Type chosen from TV-supported ProtocolInfo
+- Accept-Ranges disabled for TS/live streams
+- Range support enabled only when safe
+
+Each TV request triggers:
+- Source.Open()
+- A fresh stream reader
+
+--------------------------------------------------
+4. Stream Sources
+--------------------------------------------------
+
+Each stream type maps to a StreamSource implementation:
+
+- fileSource
+  Reads directly from disk
+
+- urlSource
+  Proxies a remote media URL
+
+- resolverSource (yt-dlp)
+  Executes yt-dlp and ffmpeg
+  Pipes resolved media into MPEG-TS
+  Streams stdout directly to the TV
+
+The resolver never exposes the original URL to the TV.
+Only the local MediaURL is used.
+
+--------------------------------------------------
+5. Resolver (yt-dlp Integration)
+--------------------------------------------------
+
+For resolvable platforms:
+- yt-dlp extracts the best compatible formats
+- ffmpeg remuxes into MPEG-TS
+- Output is written to stdout
+- TV receives a continuous byte stream
+
+This avoids:
+- Expiring URLs
+- DRM page logic
+- Incompatible containers
+
+--------------------------------------------------
+6. What Streaming Mode Does NOT Do
+--------------------------------------------------
+
+Streaming mode intentionally does NOT:
+- Render web pages
+- Execute JavaScript
+- Mirror the screen
+- Transcode video formats
+- Act as a browser
+
+Only raw media is streamed.
+
+--------------------------------------------------
+7. Result
+--------------------------------------------------
+
+The STREAM mode provides:
+- Stable DLNA playback
+- Live streaming support
+- YouTube and platform resolution
+- Clean separation of concerns
+- No screen sharing complexity
+
+This keeps the system predictable, debuggable,
+and compatible with real TVs.
