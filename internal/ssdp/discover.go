@@ -2,9 +2,9 @@ package ssdp
 
 import (
 	"net"
+	"renderctl/logger"
 	"strings"
 	"time"
-	"tvctrl/logger"
 )
 
 type SSDPDevice struct {

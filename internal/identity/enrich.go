@@ -4,8 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"renderctl/logger"
 	"time"
-	"tvctrl/logger"
 )
 
 func Enrich(baseURL string, timeout time.Duration) (*Info, error) {

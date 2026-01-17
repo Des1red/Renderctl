@@ -1,6 +1,6 @@
 package ui
 
-import "tvctrl/internal/models"
+import "renderctl/internal/models"
 
 func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 	switch mode {

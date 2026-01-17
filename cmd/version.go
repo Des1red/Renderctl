@@ -8,6 +8,6 @@ import (
 var Version = "dev v2.0.0."
 
 func printVersionAndExit() {
-	fmt.Printf("tvctrl %s\n", Version)
+	fmt.Printf("renderctl %s\n", Version)
 	os.Exit(0)
 }

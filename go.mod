@@ -1,4 +1,4 @@
-module tvctrl
+module renderctl
 
 go 1.24.0
 

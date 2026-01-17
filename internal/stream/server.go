@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"tvctrl/internal/models"
-	"tvctrl/logger"
+	"renderctl/internal/models"
+	"renderctl/logger"
 )
 
 type ClientProfile struct {

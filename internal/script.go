@@ -2,11 +2,11 @@ package internal
 
 import (
 	"log"
-	"tvctrl/internal/avtransport"
-	"tvctrl/internal/models"
-	"tvctrl/internal/stream"
-	"tvctrl/internal/utils"
-	"tvctrl/logger"
+	"renderctl/internal/avtransport"
+	"renderctl/internal/models"
+	"renderctl/internal/stream"
+	"renderctl/internal/utils"
+	"renderctl/logger"
 )
 
 func runWithConfig(cfg *models.Config) {

@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"tvctrl/logger"
+	"renderctl/logger"
 )
 
 type resolverSource struct {

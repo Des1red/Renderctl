@@ -1,4 +1,4 @@
-tvctrl – v2 Improvements Summary
+renderctl – v2 Improvements Summary
 ================================
 
 1. Graceful HTTP Server Lifecycle (Channel-based)
@@ -104,7 +104,7 @@ Key outcome:
 ----------------------------------------
 - Enabled Cobra completion command.
 - Added helper command:
-  - `tvctrl install-completion`
+  - `renderctl install-completion`
 - Generates shell-specific completion scripts (bash / zsh / fish).
 
 Key outcome:

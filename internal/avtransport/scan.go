@@ -3,8 +3,8 @@ package avtransport
 import (
 	"fmt"
 	"net"
-	"tvctrl/internal/models"
-	"tvctrl/logger"
+	"renderctl/internal/models"
+	"renderctl/logger"
 )
 
 func expandCIDR(cidr string) ([]string, error) {

@@ -4,8 +4,8 @@ import (
 	"encoding/xml"
 	"net/http"
 	"net/url"
+	"renderctl/logger"
 	"strings"
-	"tvctrl/logger"
 )
 
 type DeviceDescription struct {

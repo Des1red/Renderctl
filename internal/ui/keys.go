@@ -3,9 +3,9 @@ package ui
 import (
 	"fmt"
 	"os"
+	"renderctl/internal/models"
 	"strconv"
 	"strings"
-	"tvctrl/internal/models"
 
 	"github.com/gdamore/tcell/v2"
 )

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"tvctrl/internal/models"
+	"renderctl/internal/models"
 
 	"github.com/gdamore/tcell/v2"
 )

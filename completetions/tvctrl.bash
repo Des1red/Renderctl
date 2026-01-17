@@ -1,4 +1,4 @@
-_tvctrl() {
+_renderctl() {
   local cur
   cur="${COMP_WORDS[COMP_CWORD]}"
 
@@ -9,4 +9,4 @@ _tvctrl() {
   COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
 }
 
-complete -F _tvctrl tvctrl
+complete -F _renderctl renderctl

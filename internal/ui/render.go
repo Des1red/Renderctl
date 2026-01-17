@@ -32,7 +32,7 @@ func renderModeScreen(s tcell.Screen, styles UIStyles, selected int) {
 
 	drawBox(s, styles.Border, x, y, boxW, boxH)
 
-	drawText(s, styles.Title, x+4, y+2, "tvctrl v2")
+	drawText(s, styles.Title, x+4, y+2, "renderctl v2")
 	drawText(s, styles.Normal, x+4, y+4, "Select execution mode")
 
 	for i, m := range modes {
@@ -78,7 +78,7 @@ func renderInputScreen(
 
 	drawBox(s, styles.Border, x, y, boxW, boxH)
 
-	drawText(s, styles.Title, x+3, y+1, "tvctrl configuration")
+	drawText(s, styles.Title, x+3, y+1, "renderctl configuration")
 	drawText(s, styles.Dim, x+3, y+3, "↑ ↓ navigate   Enter edit/toggle   Esc back   q quit")
 
 	rowY := y + 5

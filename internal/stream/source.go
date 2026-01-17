@@ -2,7 +2,7 @@ package stream
 
 import (
 	"errors"
-	"tvctrl/internal/models"
+	"renderctl/internal/models"
 )
 
 // This is generic in structure; later you replace with screen capture sources etc.

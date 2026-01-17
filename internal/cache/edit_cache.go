@@ -2,11 +2,11 @@ package cache
 
 import (
 	"fmt"
+	"renderctl/internal/models"
+	"renderctl/internal/utils"
+	"renderctl/logger"
 	"sort"
 	"strings"
-	"tvctrl/internal/models"
-	"tvctrl/internal/utils"
-	"tvctrl/logger"
 )
 
 func StoreInCache(cfg *models.Config, update Device) {

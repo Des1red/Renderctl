@@ -16,10 +16,10 @@ func printHelp() {
 		0,   // flags
 	)
 
-	fmt.Fprintln(w, "tvctrl - Simple TV controller using AVTransport")
+	fmt.Fprintln(w, "renderctl - Simple TV controller using AVTransport")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Usage:")
-	fmt.Fprintln(w, "\ttvctrl [flags]")
+	fmt.Fprintln(w, "\trenderctl [flags]")
 	fmt.Fprintln(w)
 
 	fmt.Fprintln(w, "Execution:")

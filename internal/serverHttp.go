@@ -2,8 +2,8 @@ package internal
 
 import (
 	"net/http"
-	"tvctrl/internal/models"
-	"tvctrl/logger"
+	"renderctl/internal/models"
+	"renderctl/logger"
 )
 
 func ServeDirGo(cfg models.Config, stop <-chan struct{}) {

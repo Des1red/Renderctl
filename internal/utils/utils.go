@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"renderctl/internal/models"
+	"renderctl/logger"
 	"strings"
-	"tvctrl/internal/models"
-	"tvctrl/logger"
 )
 
 func NormalizeMode(mode string) string {

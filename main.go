@@ -1,6 +1,6 @@
 package main
 
-import "tvctrl/cmd"
+import "renderctl/cmd"
 
 func main() {
 	cmd.Execute()

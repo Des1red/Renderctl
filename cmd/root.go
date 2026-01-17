@@ -5,12 +5,12 @@ import (
 	"os/signal"
 	"time"
 
-	"tvctrl/internal"
-	"tvctrl/internal/cache"
-	"tvctrl/internal/models"
-	"tvctrl/internal/ui"
-	"tvctrl/internal/utils"
-	"tvctrl/logger"
+	"renderctl/internal"
+	"renderctl/internal/cache"
+	"renderctl/internal/models"
+	"renderctl/internal/ui"
+	"renderctl/internal/utils"
+	"renderctl/logger"
 )
 
 var cfg = models.DefaultConfig
@@ -70,7 +70,7 @@ func Execute() {
 		return
 	}
 
-	logger.Info("tvctrl running — press Ctrl+C to exit")
+	logger.Info("renderctl running — press Ctrl+C to exit")
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig

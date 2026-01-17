@@ -2,10 +2,10 @@
 package stream
 
 import (
+	"renderctl/internal/avtransport"
+	"renderctl/internal/models"
+	"renderctl/internal/utils"
 	"strings"
-	"tvctrl/internal/avtransport"
-	"tvctrl/internal/models"
-	"tvctrl/internal/utils"
 )
 
 type StreamKind int

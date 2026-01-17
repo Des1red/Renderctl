@@ -1,8 +1,8 @@
-# TV Controller (tvctrl) — v2
+# TV Controller (renderctl) — v2
 
 Simple TV controller for sending media via the UPnP AVTransport protocol.
 
-`tvctrl` discovers UPnP/DLNA-compatible TVs on the local network, resolves valid AVTransport endpoints, and sends media to the TV using SOAP requests (`SetAVTransportURI` + `Play`).  
+`renderctl` discovers UPnP/DLNA-compatible TVs on the local network, resolves valid AVTransport endpoints, and sends media to the TV using SOAP requests (`SetAVTransportURI` + `Play`).  
 It supports automatic discovery, probing fallback, **explicit cache selection**, vendor-aware metadata handling, and clean local media serving, and direct streaming mode.
 
 ---
@@ -86,7 +86,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 - Supported stream types
 
-- tvctrl automatically classifies the -Lf input into one of three stream types:
+- renderctl automatically classifies the -Lf input into one of three stream types:
 
 #### 1. Local file stream
 
@@ -189,7 +189,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 ### Basic playback (auto mode)
 
-- tvctrl -Lf media.mp4 -Lip 192.168.1.110
+- renderctl -Lf media.mp4 -Lip 192.168.1.110
 
     Discovers the TV automatically
 
@@ -199,8 +199,8 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 ### Explicit cache selection (v2)
 
-- tvctrl --list-cache
-- tvctrl --select-cache 0 -Lf media.mp4
+- renderctl --list-cache
+- renderctl --select-cache 0 -Lf media.mp4
 
     Uses the selected cached TV
 
@@ -210,7 +210,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 - Probe only (no playback)
 
-tvctrl --probe-only -Tip 192.168.1.10
+renderctl --probe-only -Tip 192.168.1.10
 
     Probes the TV for a valid AVTransport endpoint
 
@@ -218,7 +218,7 @@ tvctrl --probe-only -Tip 192.168.1.10
 
 ### Manual mode
 
-- tvctrl -mode manual \
+- renderctl -mode manual \
   -Tip 192.168.1.10 \
   -Tport 9197 \
   -Tpath /dmr/upnp/control/AVTransport1 \
@@ -293,7 +293,7 @@ tvctrl --probe-only -Tip 192.168.1.10
 
 One-time setup:
 
-tvctrl install-completion
+renderctl install-completion
 exec $SHELL
 
 Enables tab completion for flags and commands.

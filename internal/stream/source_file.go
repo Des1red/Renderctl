@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"tvctrl/logger"
+	"renderctl/logger"
 )
 
 type fileSource struct{ path string }

@@ -3,10 +3,10 @@ package stream
 import (
 	"time"
 
-	"tvctrl/internal/avtransport"
-	"tvctrl/internal/models"
-	"tvctrl/internal/utils"
-	"tvctrl/logger"
+	"renderctl/internal/avtransport"
+	"renderctl/internal/models"
+	"renderctl/internal/utils"
+	"renderctl/logger"
 )
 
 func StartStreamPlay(cfg *models.Config, stop <-chan struct{}) {

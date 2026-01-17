@@ -2,13 +2,13 @@ package avtransport
 
 import (
 	"fmt"
+	"renderctl/internal/cache"
+	"renderctl/internal/identity"
+	"renderctl/internal/models"
+	"renderctl/internal/ssdp"
+	"renderctl/internal/utils"
+	"renderctl/logger"
 	"time"
-	"tvctrl/internal/cache"
-	"tvctrl/internal/identity"
-	"tvctrl/internal/models"
-	"tvctrl/internal/ssdp"
-	"tvctrl/internal/utils"
-	"tvctrl/logger"
 )
 
 func TryProbe(cfg *models.Config) bool {
