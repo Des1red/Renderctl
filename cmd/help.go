@@ -23,6 +23,7 @@ func printHelp() {
 	fmt.Fprintln(w)
 
 	fmt.Fprintln(w, "Execution:")
+	printFlag(w, "--tui", "", "					    Start program as TUI")
 	printFlag(w, "--probe-only", "", " Probe AVTransport only")
 	printFlag(w, "--mode", "string", "Execution mode (auto/manual/scan/stream)")
 
