@@ -78,7 +78,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 ---
 
-###Streaming mode (v2)
+### Streaming mode (v2)
 
 - Streaming mode is a dedicated execution path designed for reliable DLNA playback without screen mirroring.
 
@@ -88,7 +88,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 - tvctrl automatically classifies the -Lf input into one of three stream types:
 
-1. Local file stream
+#### 1. Local file stream
 
 - Example: movie.ts, video.mp4
 
@@ -96,7 +96,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 - TV pulls the media directly
 
-2. External media URL
+#### 2. External media URL
 
 - Example: https://example.com/video.mp4
 
@@ -104,7 +104,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
 
 - No transcoding
 
-3. Resolved stream (platforms)
+#### 3. Resolved stream (platforms)
 
 - Example: YouTube URLs
 
@@ -144,7 +144,7 @@ It supports automatic discovery, probing fallback, **explicit cache selection**,
  
 - Keeps behavior predictable across vendors
  
- What streaming mode does NOT do
+#### What streaming mode does NOT do
  
 - No screen mirroring
  
