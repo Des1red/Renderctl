@@ -9,6 +9,7 @@ const (
 	stateConfig
 	stateConfirm
 	stateExit
+	stateBoot
 )
 
 // UI-local transactional state

@@ -19,6 +19,11 @@ func renderState(
 	confirmSelected int,
 ) {
 	switch state {
+	case stateBoot:
+		screen.Clear()
+		drawBootScreen(screen, styles)
+		state = stateModeSelect
+
 	case stateModeSelect:
 		renderModeScreen(screen, styles, selectedMode)
 

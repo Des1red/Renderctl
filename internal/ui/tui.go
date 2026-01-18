@@ -29,15 +29,17 @@ func Run(cfg *models.Config) {
 	// UI context
 	ctx := &uiContext{cfg: cfg}
 
-	state := stateModeSelect
+	state := stateBoot
 	confirmSelected := 0
 	selectedMode := 0
+
 	var fields []Field
 	selectedField := 0
 	editMode := false
 	editBuffer := ""
 
 	for state != stateExit {
+
 		renderState(
 			screen,
 			styles,
@@ -50,6 +52,12 @@ func Run(cfg *models.Config) {
 			ctx,
 			confirmSelected,
 		)
+
+		//  BOOT HANDLING
+		if state == stateBoot {
+			state = stateModeSelect
+			continue
+		}
 
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
