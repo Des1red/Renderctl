@@ -26,10 +26,12 @@ func renderState(
 		renderInputScreen(
 			screen,
 			styles,
+			ctx.working.Mode,
 			fields,
 			selectedField,
 			editMode,
 			editBuffer,
+			ctx,
 		)
 
 	case stateConfirm:
@@ -46,7 +48,9 @@ func renderState(
 const (
 	uiBoxWidth     = 80
 	uiBoxMargin    = 2
-	uiBoxMaxHeight = 24
+	uiBoxMaxHeight = 26
+
+	footerHeight = 3 // hint + breathing room
 
 	maxTextWidth = uiBoxWidth - 6 // left padding + safety
 )
@@ -81,7 +85,21 @@ func renderModeScreen(s tcell.Screen, styles UIStyles, selected int) {
 			prefix = "> "
 			style = styles.Select
 		}
+
+		// mode name
 		drawText(s, style, x+4, y+6+i, prefix+m)
+
+		// description (dim, offset)
+		desc := modeDescription(m)
+		if desc != "" {
+			drawText(
+				s,
+				styles.Dim,
+				x+22, // spacing between name and description
+				y+6+i,
+				desc,
+			)
+		}
 	}
 
 	drawText(s, styles.Dim, x+4, y+boxH-3, "↑ ↓ move    Enter select    q quit")
@@ -94,10 +112,12 @@ func renderModeScreen(s tcell.Screen, styles UIStyles, selected int) {
 func renderInputScreen(
 	s tcell.Screen,
 	styles UIStyles,
+	mode string,
 	fields []Field,
 	selected int,
 	editMode bool,
 	editBuffer string,
+	ctx *uiContext,
 ) {
 	s.Clear()
 	w, h := s.Size()
@@ -112,15 +132,23 @@ func renderInputScreen(
 	if y < uiBoxMargin {
 		y = uiBoxMargin
 	}
+	contentMaxY := y + boxH - footerHeight
 
 	x := (w - boxW) / 2
 
 	drawBox(s, styles.Border, x, y, boxW, boxH)
 
-	drawText(s, styles.Title, x+3, y+1, "renderctl configuration")
-	drawText(s, styles.Dim, x+3, y+3, "↑ ↓ navigate   Enter edit/toggle   Esc back   q quit")
+	drawText(
+		s,
+		styles.Title,
+		x+3,
+		y+1,
+		configHeaderForMode(mode),
+	)
+	drawText(s, styles.Dim, x+3, y+3, "↑ ↓ navigate   Enter edit/toggle   Esc back")
 
 	rowY := y + 5
+
 	selectIdx := 0 // counts ONLY selectable items
 	lastSection := ""
 
@@ -135,8 +163,12 @@ func renderInputScreen(
 			lastSection = section
 		}
 
+		disabled := isFieldDisabled(f, ctx)
+
 		style := styles.Normal
-		if selectIdx == selected {
+		if disabled {
+			style = styles.Dim
+		} else if selectIdx == selected {
 			if editMode {
 				style = styles.Edit
 			} else {
@@ -163,20 +195,49 @@ func renderInputScreen(
 	// spacer
 	rowY++
 	// ----- EXECUTE -----
-	style := styles.Normal
-	if selectIdx == selected {
-		style = styles.Select
+	execDisabled := isExecuteDisabled(ctx)
+
+	if rowY < contentMaxY {
+		style := styles.Normal
+		if execDisabled {
+			style = styles.Dim
+		} else if selectIdx == selected {
+			style = styles.Select
+		}
+
+		drawText(
+			s,
+			style,
+			x+3,
+			rowY,
+			fmt.Sprintf("[ %s ]", executeLabelForMode(mode)),
+		)
 	}
-	drawText(s, style, x+3, rowY, "[ Execute ]")
+	if execDisabled {
+		reason := executeDisableReason(ctx)
+		if reason != "" {
+			rowY++
+			drawText(
+				s,
+				styles.Dim,
+				x+6,
+				rowY,
+				"↳ "+reason,
+			)
+		}
+	}
+
 	rowY++
 	selectIdx++
 
 	// ----- BACK -----
-	style = styles.Normal
+	style := styles.Normal
 	if selectIdx == selected {
 		style = styles.Select
 	}
-	drawText(s, style, x+3, rowY, "[ Back to mode selection ]")
+	if rowY < contentMaxY {
+		drawText(s, style, x+3, rowY, "[ Back to mode selection ]")
+	}
 
 	s.Show()
 }
@@ -206,22 +267,36 @@ func renderConfirmScreen(
 
 	drawBox(s, styles.Border, x, y, boxW, boxH)
 
-	drawText(s, styles.Title, x+3, y+1, "Confirm execution")
-	drawText(s, styles.Dim, x+3, y+3, fmt.Sprintf("Mode: %s", mode))
-
 	rowY := y + 5
 
 	// dump fields (simple version, ordered later)
-	printKV := func(label, value string) {
+	printKV := func(label, value string, valueStyle tcell.Style) {
 		drawText(s, styles.Label, x+3, rowY, fmt.Sprintf("%-22s", label))
 		drawText(s, styles.Dim, x+26, rowY, "→")
-		drawText(s, styles.Normal, x+30, rowY, value)
+		drawText(s, valueStyle, x+30, rowY, value)
 		rowY++
 	}
 
 	// --- minimal explicit list (safe & clear) ---
+	lastSection := ""
 	for _, f := range fields {
-		var value string
+		section := fieldSection(f.Label)
+		if section != "" && section != lastSection {
+			drawText(
+				s,
+				styles.Dim,
+				x+3,
+				rowY,
+				"-- "+section+" --",
+			)
+			rowY++
+			lastSection = section
+		}
+
+		var (
+			value string
+			style = styles.Normal
+		)
 
 		switch f.Type {
 		case FieldBool:
@@ -232,18 +307,43 @@ func renderConfirmScreen(
 			}
 
 		case FieldString:
-			if f.String != nil {
+			if f.String != nil && *f.String != "" {
 				value = *f.String
+			} else {
+				value = "(not set)"
+				style = styles.Dim
 			}
 
 		case FieldInt:
-			if f.Int != nil {
+			if f.Int != nil && *f.Int != 0 {
 				value = fmt.Sprintf("%d", *f.Int)
+			} else {
+				value = "(default)"
+				style = styles.Dim
 			}
 		}
 
-		printKV(f.Label, value)
+		printKV(f.Label, value, style)
+
 	}
+
+	// title
+	drawText(
+		s,
+		styles.Title,
+		x+3,
+		y+1,
+		confirmTitleForMode(mode),
+	)
+	// subtitle
+	drawText(
+		s,
+		styles.Dim,
+		x+3,
+		y+2,
+		confirmSubtitleForMode(mode),
+	)
+	// ... fields rendering ...
 
 	styleConfirm := styles.Normal
 	styleCancel := styles.Normal

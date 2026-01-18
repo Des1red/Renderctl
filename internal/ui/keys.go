@@ -120,17 +120,24 @@ func handleConfigKey(
 	screen tcell.Screen,
 	confirmSelected *int,
 ) {
-	// hard quit
-	if ev.Key() == tcell.KeyRune && ev.Rune() == 'q' {
-		screen.Fini()
-		os.Exit(0)
-	}
+	// // hard quit
+	// if ev.Key() == tcell.KeyRune && ev.Rune() == 'q' {
+	// 	screen.Fini()
+	// 	os.Exit(0)
+	// }
 
 	// ----- EDIT MODE -----
 	if *editMode {
 		switch ev.Key() {
 		case tcell.KeyEnter:
+			// GUARD: prevent out-of-range access
+			if *selectedField < 0 || *selectedField >= len(fields) {
+				return
+			}
 			f := fields[*selectedField]
+			if isFieldDisabled(f, ctx) {
+				return
+			}
 			if f.Type == FieldString {
 				*f.String = *editBuffer
 			} else if f.Type == FieldInt {
@@ -157,21 +164,48 @@ func handleConfigKey(
 	// ----- NORMAL MODE -----
 	switch ev.Key() {
 	case tcell.KeyUp:
-		if *selectedField > 0 {
+		for {
+			if *selectedField <= 0 {
+				break
+			}
 			*selectedField--
+
+			// virtual rows (Execute / Back)
+			if *selectedField >= len(fields) {
+				break
+			}
+
+			if !isRowDisabled(*selectedField, fields, ctx) {
+				break
+			}
 		}
 
 	case tcell.KeyDown:
-		if *selectedField < len(fields)+1 {
+		for {
+			if *selectedField >= len(fields)+1 {
+				break
+			}
 			*selectedField++
+
+			// allow landing on Execute / Back
+			if *selectedField >= len(fields) {
+				break
+			}
+
+			if !isRowDisabled(*selectedField, fields, ctx) {
+				break
+			}
 		}
 
 	case tcell.KeyEnter:
 
 		// Execute
 		if *selectedField == len(fields) {
-			*state = stateConfirm
+			if isExecuteDisabled(ctx) {
+				return
+			}
 			*selectedField = 0 // optional safety
+			*state = stateConfirm
 			*confirmSelected = 0
 			return
 		}
@@ -186,7 +220,14 @@ func handleConfigKey(
 		}
 
 		// Normal field
+		// GUARD: prevent out-of-range access
+		if *selectedField < 0 || *selectedField >= len(fields) {
+			return
+		}
 		f := fields[*selectedField]
+		if isFieldDisabled(f, ctx) {
+			return
+		}
 		switch f.Type {
 		case FieldBool:
 			*f.Bool = !*f.Bool
@@ -204,4 +245,48 @@ func handleConfigKey(
 		*editBuffer = ""
 		*state = stateModeSelect
 	}
+}
+
+func isExecuteDisabled(ctx *uiContext) bool {
+	mode := ctx.working.Mode
+
+	switch mode {
+
+	case "auto":
+		// required
+		if ctx.working.LIP == "" || ctx.working.TIP == "" {
+			return true
+		}
+
+		// probing skips file requirement
+		if ctx.working.ProbeOnly {
+			return false
+		}
+
+		// otherwise file is required
+		return ctx.working.LFile == ""
+
+	case "stream", "manual":
+		// always required
+		return ctx.working.LIP == "" ||
+			ctx.working.TIP == "" ||
+			ctx.working.LFile == ""
+	}
+
+	return false
+}
+
+func isRowDisabled(index int, fields []Field, ctx *uiContext) bool {
+	// normal fields
+	if index >= 0 && index < len(fields) {
+		return isFieldDisabled(fields[index], ctx)
+	}
+
+	// Execute row
+	if index == len(fields) {
+		return isExecuteDisabled(ctx)
+	}
+
+	// Back is always enabled
+	return false
 }

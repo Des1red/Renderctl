@@ -15,7 +15,7 @@ func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 			{Label: "Use cache", Type: FieldBool, Bool: &cfg.UseCache},
 		}
 
-	case "auto", "stream":
+	case "auto":
 		return []Field{
 			{Label: "TV IP", Type: FieldString, String: &cfg.TIP},
 			{Label: "TV Port", Type: FieldString, String: &cfg.TPort},
@@ -26,7 +26,25 @@ func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 			{Label: "Local dir", Type: FieldString, String: &cfg.LDir},
 			{Label: "Serve port", Type: FieldString, String: &cfg.ServePort},
 
+			// auto-only
 			{Label: "Probe only", Type: FieldBool, Bool: &cfg.ProbeOnly},
+
+			{Label: "Auto cache", Type: FieldBool, Bool: &cfg.AutoCache},
+			{Label: "Use cache", Type: FieldBool, Bool: &cfg.UseCache},
+			{Label: "Select cache index", Type: FieldInt, Int: &cfg.SelectCache},
+		}
+
+	case "stream":
+		return []Field{
+			{Label: "TV IP", Type: FieldString, String: &cfg.TIP},
+			{Label: "TV Port", Type: FieldString, String: &cfg.TPort},
+			{Label: "TV Vendor", Type: FieldString, String: &cfg.TVVendor},
+
+			{Label: "Local file", Type: FieldString, String: &cfg.LFile},
+			{Label: "Local IP", Type: FieldString, String: &cfg.LIP},
+			{Label: "Local dir", Type: FieldString, String: &cfg.LDir},
+			{Label: "Serve port", Type: FieldString, String: &cfg.ServePort},
+
 			{Label: "Auto cache", Type: FieldBool, Bool: &cfg.AutoCache},
 			{Label: "Use cache", Type: FieldBool, Bool: &cfg.UseCache},
 			{Label: "Select cache index", Type: FieldInt, Int: &cfg.SelectCache},
@@ -44,7 +62,6 @@ func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 			{Label: "TV Path", Type: FieldString, String: &cfg.TPath},
 			{Label: "TV Vendor", Type: FieldString, String: &cfg.TVVendor},
 
-			{Label: "Probe only", Type: FieldBool, Bool: &cfg.ProbeOnly},
 			{Label: "Auto cache", Type: FieldBool, Bool: &cfg.AutoCache},
 			{Label: "Use cache", Type: FieldBool, Bool: &cfg.UseCache},
 			{Label: "Select cache index", Type: FieldInt, Int: &cfg.SelectCache},
@@ -58,4 +75,19 @@ func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 	}
 
 	return nil
+}
+
+func isFieldDisabled(f Field, ctx *uiContext) bool {
+	switch f.Label {
+
+	// cache logic
+	case "Auto cache", "Select cache index":
+		return !ctx.working.UseCache
+
+	// Local file disabled ONLY when auto + probe-only
+	case "Local file":
+		return ctx.working.Mode == "auto" && ctx.working.ProbeOnly
+	}
+
+	return false
 }
