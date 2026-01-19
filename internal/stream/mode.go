@@ -21,7 +21,7 @@ func StartStreamServer(
 	plan *StreamPlan,
 	stop <-chan struct{},
 ) {
-	servers.ServeStreamGo(
+	servers.ServeStream(
 		cfg,
 		stop,
 		plan.StreamPath,

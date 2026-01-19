@@ -1,4 +1,3 @@
-// internal/serverStream.go
 package servers
 
 import (
@@ -27,7 +26,7 @@ var (
 	mu       sync.Mutex
 )
 
-func ServeStreamGo(
+func ServeStream(
 	cfg *models.Config,
 	stop <-chan struct{},
 	streamPath string,

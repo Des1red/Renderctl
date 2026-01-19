@@ -20,7 +20,6 @@ func drawBox(s tcell.Screen, style tcell.Style, x, y, w, h int) {
 
 	for i := 1; i < h-1; i++ {
 		s.SetContent(x, y+i, '║', nil, style)
-		//s.SetContent(x+w-1, y+i, '║', nil, style)
 	}
 }
 

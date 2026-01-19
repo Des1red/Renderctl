@@ -6,7 +6,8 @@ import (
 	"renderctl/internal/servers"
 )
 
-// This is generic in structure; later you replace with screen capture sources etc.
+// This is generic in structure, but currently only applies to URLs that need
+// resolution via yt-dlp (YouTube, Vimeo, etc).
 func BuildStreamSource(cfg *models.Config) (servers.StreamSource, error) {
 	kind := ResolveStreamKind(cfg)
 

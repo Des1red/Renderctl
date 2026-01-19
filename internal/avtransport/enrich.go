@@ -23,7 +23,7 @@ func EnrichCapabilities(
 
 	media, err := FetchMediaProtocols(connMgrControlURL)
 	if err != nil {
-		media = map[string][]string{} // non-fatal, FIXED TYPE
+		media = map[string][]string{}
 	}
 
 	return &Capabilities{

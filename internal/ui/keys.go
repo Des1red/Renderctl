@@ -120,11 +120,6 @@ func handleConfigKey(
 	screen tcell.Screen,
 	confirmSelected *int,
 ) {
-	// // hard quit
-	// if ev.Key() == tcell.KeyRune && ev.Rune() == 'q' {
-	// 	screen.Fini()
-	// 	os.Exit(0)
-	// }
 
 	// ----- EDIT MODE -----
 	if *editMode {

@@ -115,6 +115,5 @@ func runScan(cfg *models.Config) {
 }
 
 func runStream(cfg *models.Config) {
-	// Implemented in internal/stream_mode.go (next section)
 	stream.StartStreamPlay(cfg)
 }

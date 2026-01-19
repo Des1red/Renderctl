@@ -70,7 +70,7 @@ type StreamKind int
 const (
 	StreamFile StreamKind = iota
 	StreamExternal
-	StreamResolved // NEW: needs yt-dlp (youtube/vimeo/etc)
+	StreamResolved // needs yt-dlp (youtube/vimeo/etc)
 )
 
 func ResolveStreamKind(cfg *models.Config) StreamKind {
@@ -87,7 +87,7 @@ func ResolveStreamKind(cfg *models.Config) StreamKind {
 	return StreamFile
 }
 
-// Step-1: minimal resolver detection (expand later)
+// minimal resolver detection (expand later)
 func looksLikeResolvableURL(u string) bool {
 	u = strings.ToLower(strings.TrimSpace(u))
 	if !strings.HasPrefix(u, "http") {
