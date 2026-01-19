@@ -148,6 +148,7 @@ func ServeStream(
 	go func() {
 		<-stop
 		logger.Notify("Shutting down stream HTTP server")
+		identity.AnnounceMediaServerByeBye(serverUUID)
 		_ = srv.Close()
 	}()
 }

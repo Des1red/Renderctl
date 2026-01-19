@@ -35,3 +35,26 @@ func AnnounceMediaServer(uuid, location string) {
 		time.Sleep(300 * time.Millisecond)
 	}
 }
+
+func AnnounceMediaServerByeBye(uuid string) {
+	msg := strings.Join([]string{
+		"NOTIFY * HTTP/1.1",
+		"HOST: 239.255.255.250:1900",
+		"NT: urn:schemas-upnp-org:device:MediaServer:1",
+		fmt.Sprintf("USN: uuid:%s::urn:schemas-upnp-org:device:MediaServer:1", uuid),
+		"NTS: ssdp:byebye",
+		"",
+		"",
+	}, "\r\n")
+
+	conn, err := net.Dial("udp4", ssdpAddr)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	for i := 0; i < 2; i++ {
+		_, _ = conn.Write([]byte(msg))
+		time.Sleep(150 * time.Millisecond)
+	}
+}

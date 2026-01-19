@@ -45,6 +45,7 @@ func InitDefaultServer(cfg models.Config, stop <-chan struct{}) {
 	go func() {
 		<-stop
 		logger.Notify("Shutting down HTTP server")
+		identity.AnnounceMediaServerByeBye(serverUUID)
 		_ = srv.Close()
 	}()
 }
