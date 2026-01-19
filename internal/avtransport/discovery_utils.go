@@ -9,6 +9,7 @@ import (
 	"renderctl/internal/ssdp"
 	"renderctl/internal/utils"
 	"renderctl/logger"
+	"strings"
 	"time"
 )
 
@@ -57,81 +58,129 @@ func TryCache(cfg *models.Config) bool {
 
 func TrySSDP(cfg *models.Config) bool {
 	logger.Notify("Running SSDP discovery scan")
-	devices, _ := ssdp.ListenNotify(3 * time.Second)
 
-	if len(devices) == 0 {
-		logger.Notify("No NOTIFY devices from SSDP listen, trying SSDP discover")
+	devices, _ := ssdp.ListenNotify(cfg.SSDPTimeout, cfg.LIP)
+
+	// filter + detect
+	found := make([]*ssdp.DetectedTV, 0)
+	for _, d := range devices {
+		if d.Location == "" {
+			continue
+		}
+		if !ssdp.LooksLikeTV(d) {
+			continue
+		}
+		if strings.Contains(d.Location, "nservice") {
+			continue
+		}
+		t, err := ssdp.FetchAndDetect(d.Location)
+		if err != nil {
+			continue
+		}
+		found = append(found, t)
+	}
+
+	// fallback even if NOTIFY had packets, but none were TVs
+	if len(found) == 0 {
+		logger.Notify("No TV-like NOTIFY devices, trying SSDP active discovery")
 		devices, _ = ssdp.Discover(3 * time.Second)
-	}
 
-	if len(devices) == 0 {
-		return false
-	}
-
-	tv, err := ssdp.FetchAndDetect(devices[0].Location)
-	if err != nil {
-		return false
-	}
-	selfUUID, err := myidentity.FetchUUID()
-	if err == nil && tv.UDN == "uuid:"+selfUUID {
-		logger.Notify("Ignoring self SSDP MediaServer (%s)", tv.UDN)
-		return false
-	}
-
-	if tv.IP != "" {
-		cfg.TIP = tv.IP
-	}
-	if tv.Port != "" {
-		cfg.TPort = tv.Port
-	}
-	if tv.ControlURL != "" {
-		cfg.TPath = tv.ControlURL
-	}
-	if tv.Vendor != "" {
-		cfg.TVVendor = tv.Vendor
-	}
-	if tv.ConnectionManagerCtrl != "" {
-		cfg.CachedConnMgrURL = tv.ConnectionManagerCtrl
-	}
-
-	caps, err := EnrichCapabilities(
-		tv.AVTransportSCPD,
-		tv.ConnectionManagerCtrl,
-		Target{
-			ControlURL: utils.ControlURL(cfg),
-		},
-	)
-
-	info, err := identity.Enrich(
-		utils.BaseUrl(cfg),
-		3*time.Second,
-	)
-
-	update := cache.Device{
-		ControlURL: utils.ControlURL(cfg),
-		Vendor:     tv.Vendor,
-		ConnMgrURL: tv.ConnectionManagerCtrl,
-	}
-
-	if err == nil {
-		update.Identity = map[string]any{
-			"friendly_name": info.FriendlyName,
-			"manufacturer":  info.Manufacturer,
-			"model_name":    info.ModelName,
-			"model_number":  info.ModelNumber,
-			"udn":           info.UDN,
-			"presentation":  info.Presentation,
+		for _, d := range devices {
+			if d.Location == "" {
+				continue
+			}
+			if !ssdp.LooksLikeTV(d) {
+				logger.Info("SSDP rejected: USN=%s SERVER=%s", d.USN, d.Server)
+				continue
+			}
+			logger.Info(
+				"SSDP candidate accepted: USN=%s SERVER=%s LOCATION=%s",
+				d.USN,
+				d.Server,
+				d.Location,
+			)
+			if strings.Contains(d.Location, "nservice") {
+				continue
+			}
+			t, err := ssdp.FetchAndDetect(d.Location)
+			if err != nil {
+				continue
+			}
+			found = append(found, t)
 		}
 	}
 
-	if err == nil && caps != nil {
-		update.Actions = caps.Actions
-		update.Media = caps.Media
-	} else {
-		logger.Notify("Capability enrichment failed: %v", err)
+	if len(found) == 0 {
+		logger.Notify("SSDP yielded no cacheable AVTransport targets")
+		return false
 	}
+	selfUUID, _ := myidentity.FetchUUID()
 
-	cache.StoreInCache(cfg, update)
+	for _, tv := range found {
+		// Ignore self
+		if selfUUID != "" && tv.UDN == "uuid:"+selfUUID {
+			logger.Notify("Ignoring self SSDP MediaServer (%s)", tv.UDN)
+			continue
+		}
+
+		// ---- LOCAL COPY (do NOT mutate global cfg) ----
+		local := *cfg
+
+		if tv.IP != "" {
+			local.TIP = tv.IP
+		}
+		if tv.Port != "" {
+			local.TPort = tv.Port
+		}
+		if tv.ControlURL != "" {
+			local.TPath = tv.ControlURL
+		}
+		if tv.Vendor != "" {
+			local.TVVendor = tv.Vendor
+		}
+		if tv.ConnectionManagerCtrl != "" {
+			local.CachedConnMgrURL = tv.ConnectionManagerCtrl
+		}
+
+		caps, err := EnrichCapabilities(
+			tv.AVTransportSCPD,
+			tv.ConnectionManagerCtrl,
+			Target{
+				ControlURL: utils.ControlURL(&local),
+			},
+		)
+
+		info, infoErr := identity.Enrich(
+			utils.BaseUrl(&local),
+			3*time.Second,
+		)
+
+		update := cache.Device{
+			ControlURL: utils.ControlURL(&local),
+			Vendor:     tv.Vendor,
+			ConnMgrURL: tv.ConnectionManagerCtrl,
+		}
+
+		if infoErr == nil {
+			update.Identity = map[string]any{
+				"friendly_name": info.FriendlyName,
+				"manufacturer":  info.Manufacturer,
+				"model_name":    info.ModelName,
+				"model_number":  info.ModelNumber,
+				"udn":           info.UDN,
+				"presentation":  info.Presentation,
+			}
+		}
+
+		if err == nil && caps != nil {
+			update.Actions = caps.Actions
+			update.Media = caps.Media
+		} else if err != nil {
+			logger.Notify("Capability enrichment failed: %v", err)
+		}
+
+		cache.StoreInCache(&local, update)
+	}
 
 	return true
 }

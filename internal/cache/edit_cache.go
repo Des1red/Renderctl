@@ -13,8 +13,34 @@ func StoreInCache(cfg *models.Config, update Device) {
 	if !cfg.UseCache || cfg.SelectCache != -1 {
 		return
 	}
+	logger.Notify("=========== SSDP DEVICE ===========")
+	logger.Notify("IP        : %s", cfg.TIP)
+	logger.Notify("Vendor    : %s", update.Vendor)
+	logger.Notify("ControlURL: %s", update.ControlURL)
+	logger.Notify("ConnMgr   : %s", update.ConnMgrURL)
+
+	if update.Identity != nil {
+		logger.Notify("Name      : %v", update.Identity["friendly_name"])
+		logger.Notify("Model     : %v", update.Identity["model_name"])
+		logger.Notify("UDN       : %v", update.Identity["udn"])
+	}
+
+	if update.Actions != nil {
+		logger.Notify("Actions   : %d supported", len(update.Actions))
+	}
+
+	if update.Media != nil {
+		logger.Notify("Media     : %d profiles", len(update.Media))
+	}
+
+	logger.Notify("===================================")
+
 	store, _ := Load()
 	dev := store[cfg.TIP]
+	if dev.ControlURL != "" && dev.ControlURL == update.ControlURL {
+		logger.Notify("Cache entry already up-to-date for %s", update.ControlURL)
+		return
+	}
 
 	alreadyStored := dev.ControlURL != ""
 

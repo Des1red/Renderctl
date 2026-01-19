@@ -17,7 +17,7 @@ const (
 
 // Fatal error (red)
 func Fatal(format string, a ...any) {
-	fmt.Fprintf(os.Stderr, red+"[FATAL] "+format+reset+"\n", a...)
+	fmt.Fprintf(os.Stderr, red+"[ERROR] "+format+reset+"\n", a...)
 	os.Exit(1)
 }
 

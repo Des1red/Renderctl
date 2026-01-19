@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -322,6 +323,13 @@ func renderConfirmScreen(
 		case FieldInt:
 			if f.Int != nil && *f.Int != 0 {
 				value = fmt.Sprintf("%d", *f.Int)
+			} else {
+				value = "(default)"
+				style = styles.Dim
+			}
+		case FieldDuration:
+			if f.Duration != nil && *f.Duration > 0 {
+				value = fmt.Sprintf("%d", int(*f.Duration/time.Second))
 			} else {
 				value = "(default)"
 				style = styles.Dim

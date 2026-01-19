@@ -24,6 +24,12 @@ func parseFlags() {
 	pflag.StringVar(&cfg.Subnet, "subnet", cfg.Subnet, "Subnet to scan (e.g. 192.168.1.0/24)")
 	pflag.BoolVar(&cfg.DeepSearch, "deep-search", cfg.DeepSearch, "Use a bigger list when probing for device endpoints")
 	pflag.BoolVar(&cfg.Discover, "ssdp", cfg.Discover, "Enable SSDP discovery")
+	pflag.DurationVar(
+		&cfg.SSDPTimeout,
+		"ssdp-timeout",
+		cfg.SSDPTimeout,
+		"SSDP discovery timeout (e.g. 30s, 2m)",
+	)
 
 	// tv
 	pflag.StringVar(&cfg.TIP, "Tip", cfg.TIP, "TV IP address")

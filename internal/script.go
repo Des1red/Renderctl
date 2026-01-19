@@ -54,9 +54,10 @@ func RunScript(cfg *models.Config) {
 
 func runAuto(cfg *models.Config) {
 	// 1) SSDP
-	if avtransport.TrySSDP(cfg) {
-		runWithConfig(cfg)
-		return
+	if cfg.Discover {
+		if avtransport.TrySSDP(cfg) {
+			// Device discovered via SSDP saved in cache
+		}
 	}
 
 	if cfg.UseCache {
@@ -95,11 +96,8 @@ func runScan(cfg *models.Config) {
 	// --- SSDP scan ---
 	if cfg.Discover {
 		if avtransport.TrySSDP(cfg) {
-			logger.Success("Device discovered via SSDP")
-		} else {
-			logger.Notify("No devices discovered via SSDP")
+			// Device discovered via SSDP saved in cache
 		}
-		return
 	}
 
 	// --- Subnet scan ---

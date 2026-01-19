@@ -62,10 +62,19 @@ func drawFieldRow(
 		} else {
 			value = "No"
 		}
+
 	case FieldString:
 		value = *f.String
+
 	case FieldInt:
 		value = fmt.Sprintf("%d", *f.Int)
+
+	case FieldDuration:
+		if f.Duration != nil && *f.Duration > 0 {
+			value = fmt.Sprintf("%d", int(*f.Duration/time.Second))
+		} else {
+			value = "0"
+		}
 	}
 
 	if editMode && isSelected {

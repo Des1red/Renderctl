@@ -40,6 +40,7 @@ func printHelp() {
 	printFlag(w, "--subnet", "  string", "   Subnet to scan (e.g. 192.168.1.0/24)")
 	printFlag(w, "--deep-search", "", "	Extended endpoint probing")
 	printFlag(w, "--ssdp", "", "		         Enable SSDP discovery")
+	printFlag(w, "--ssdp-timeout", "duration", "   SSDP discovery timeout duration")
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "TV:")

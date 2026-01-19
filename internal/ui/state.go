@@ -1,6 +1,9 @@
 package ui
 
-import "renderctl/internal/models"
+import (
+	"renderctl/internal/models"
+	"time"
+)
 
 type uiState int
 
@@ -19,11 +22,14 @@ type uiContext struct {
 
 	// working copy edited by TUI
 	working models.Config
+
+	ssdpTimeoutSec int
 }
 
 // reset working copy to defaults
 func (u *uiContext) resetWorking() {
 	u.working = models.DefaultConfig
+	u.ssdpTimeoutSec = int(u.working.SSDPTimeout / time.Second)
 }
 
 // copy working config into real config (commit point, used later)

@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Config struct {
 	Interactive bool
 	Mode        string // "auto" | "manual"
@@ -12,8 +14,9 @@ type Config struct {
 	ForgetCache string // "", "all", or IP
 	ListCache   bool
 
-	DeepSearch bool
-	Subnet     string
+	DeepSearch  bool
+	Subnet      string
+	SSDPTimeout time.Duration
 
 	TIP      string // TV IP
 	TPort    string // TV SOAP port
@@ -31,6 +34,7 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
+	SSDPTimeout: 60 * time.Second,
 	Interactive: false,
 	SelectCache: -1,
 	AutoCache:   false,

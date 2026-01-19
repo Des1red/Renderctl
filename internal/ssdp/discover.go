@@ -1,6 +1,7 @@
 package ssdp
 
 import (
+	"fmt"
 	"net"
 	"renderctl/logger"
 	"strings"
@@ -31,21 +32,122 @@ var ssdpSearches = []string{
 	"ssdp:all",
 }
 
-func ListenNotify(timeout time.Duration) ([]SSDPDevice, error) {
+func pickInterfaceByIP(localIP string) (*net.Interface, error) {
+	ip := net.ParseIP(localIP)
+	if ip == nil {
+		return nil, fmt.Errorf("invalid local IP: %q", localIP)
+	}
+
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+		if strings.Contains(iface.Name, "lo") {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, a := range addrs {
+			var addrIP net.IP
+			switch v := a.(type) {
+			case *net.IPNet:
+				addrIP = v.IP
+			case *net.IPAddr:
+				addrIP = v.IP
+			}
+			if addrIP != nil && addrIP.Equal(ip) {
+				return &iface, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("no multicast interface found for local IP %s", localIP)
+}
+
+func LooksLikeTV(d SSDPDevice) bool {
+	usn := strings.ToLower(d.USN)
+	srv := strings.ToLower(d.Server)
+	loc := strings.ToLower(d.Location)
+
+	// HARD NOs — routers & infra
+	if strings.Contains(usn, "internetgatewaydevice") {
+		return false
+	}
+	if strings.Contains(usn, "wan") || strings.Contains(usn, "igd") {
+		return false
+	}
+	if strings.Contains(loc, "igd") || strings.Contains(loc, "wps") {
+		return false
+	}
+
+	// STRONG YES — real render paths
+	if strings.Contains(usn, "mediarenderer") {
+		return true
+	}
+	if strings.Contains(usn, "avtransport") {
+		return true
+	}
+	if strings.Contains(usn, "renderingcontrol") {
+		return true
+	}
+
+	// Vendor renderers (DLNA stacks lie here)
+	if strings.Contains(srv, "samsung") ||
+		strings.Contains(srv, "lg") ||
+		strings.Contains(srv, "sony") ||
+		strings.Contains(srv, "philips") ||
+		strings.Contains(srv, "panasonic") {
+		return true
+	}
+
+	// Chromecast / Android TV style
+	if strings.Contains(usn, "mdx") || strings.Contains(usn, "dial") {
+		return true
+	}
+
+	// LAST-RESORT rootdevice (ONLY if it smells like a TV)
+	if strings.Contains(usn, "upnp:rootdevice") {
+		if strings.Contains(srv, "tv") ||
+			strings.Contains(srv, "dlna") ||
+			strings.Contains(srv, "mediarenderer") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ListenNotify(timeout time.Duration, ip string) ([]SSDPDevice, error) {
 	logger.Notify("Listening for SSDP NOTIFY packets (%v)", timeout)
 
 	addr, _ := net.ResolveUDPAddr("udp4", "239.255.255.250:1900")
 
-	conn, err := net.ListenMulticastUDP("udp4", nil, addr)
+	// PICK A REAL INTERFACE (eth0 / wlan0)
+	iface, err := pickInterfaceByIP(ip)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := net.ListenMulticastUDP("udp4", iface, addr)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
+	_ = conn.SetReadBuffer(65536)
 	_ = conn.SetDeadline(time.Now().Add(timeout))
 
 	var devices []SSDPDevice
-	buf := make([]byte, 2048)
+	buf := make([]byte, 8192)
 
 	for {
 		n, _, err := conn.ReadFromUDP(buf)
@@ -54,10 +156,12 @@ func ListenNotify(timeout time.Duration) ([]SSDPDevice, error) {
 		}
 
 		resp := string(buf[:n])
-		logger.Info("SSDP NOTIFY received (%d bytes)", n)
-		if strings.Contains(resp, "ssdp:alive") {
+
+		if strings.Contains(resp, "NOTIFY") &&
+			(strings.Contains(resp, "ssdp:alive") ||
+				strings.Contains(resp, "ssdp:byebye")) {
 			dev := parseSSDP(resp)
-			if dev.Location != "" {
+			if dev.Location != "" || dev.USN != "" {
 				logger.Success("SSDP NOTIFY device: %s", dev.Location)
 				devices = append(devices, dev)
 			}
@@ -89,49 +193,44 @@ func sendSearch(conn net.PacketConn, st string) error {
 
 func Discover(timeout time.Duration) ([]SSDPDevice, error) {
 	logger.Notify("Starting SSDP active discovery (%v)", timeout)
+
 	conn, err := net.ListenPacket("udp4", ":0")
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	devices := make(map[string]SSDPDevice) // dedupe by LOCATION
+	// ONE deadline for the whole discovery window
+	_ = conn.SetDeadline(time.Now().Add(timeout))
+
+	devices := make(map[string]SSDPDevice)
 	buf := make([]byte, 2048)
 
 	for _, st := range ssdpSearches {
 		logger.Info("SSDP M-SEARCH for ST: %s", st)
-		// Send search 2 times per ST
-		for i := 0; i < 2; i++ {
-			logger.Info("Sending SSDP M-SEARCH (%d/2) for %s", i+1, st)
-			_ = sendSearch(conn, st)
-			time.Sleep(150 * time.Millisecond)
-		}
 
-		_ = conn.SetDeadline(time.Now().Add(timeout))
+		// Send once, TVs often ignore rapid spam
+		_ = sendSearch(conn, st)
 
-		for {
-			n, _, err := conn.ReadFrom(buf)
-			if err != nil {
-				break
-			}
-
-			resp := string(buf[:n])
-			dev := parseSSDP(resp)
-			if dev.Location != "" {
-				logger.Success("SSDP response: %s", dev.Location)
-				devices[dev.Location] = dev
-			}
-		}
-
-		// Early exit if we found anything
-		if len(devices) > 0 {
-			logger.Notify("SSDP discovery early exit — device found")
-			break
-		}
-
+		// Give TVs time to respond (Samsung needs this)
+		time.Sleep(500 * time.Millisecond)
 	}
 
-	// Convert map → slice
+	for {
+		n, _, err := conn.ReadFrom(buf)
+		if err != nil {
+			break // deadline hit
+		}
+
+		resp := string(buf[:n])
+		dev := parseSSDP(resp)
+
+		if dev.Location != "" || dev.USN != "" {
+			logger.Success("SSDP response: %s", dev.Location)
+			devices[dev.Location] = dev
+		}
+	}
+
 	var result []SSDPDevice
 	for _, d := range devices {
 		result = append(result, d)

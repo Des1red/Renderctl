@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -139,6 +140,10 @@ func handleConfigKey(
 				if v, err := strconv.Atoi(*editBuffer); err == nil {
 					*f.Int = v
 				}
+			} else if f.Type == FieldDuration {
+				if v, err := strconv.Atoi(*editBuffer); err == nil {
+					*f.Duration = time.Duration(v) * time.Second
+				}
 			}
 			*editMode = false
 
@@ -232,6 +237,9 @@ func handleConfigKey(
 		case FieldInt:
 			*editMode = true
 			*editBuffer = fmt.Sprintf("%d", *f.Int)
+		case FieldDuration:
+			*editMode = true
+			*editBuffer = fmt.Sprintf("%d", int(*f.Duration/time.Second))
 		}
 
 	case tcell.KeyEscape:
