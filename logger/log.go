@@ -18,7 +18,7 @@ const (
 // Fatal error (red)
 func Fatal(format string, a ...any) {
 	fmt.Fprintf(os.Stderr, red+"[ERROR] "+format+reset+"\n", a...)
-	os.Exit(1)
+	os.Exit(0)
 }
 
 // Success (blue neon)

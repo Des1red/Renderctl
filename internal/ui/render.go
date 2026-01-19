@@ -54,7 +54,7 @@ func renderState(
 const (
 	uiBoxWidth     = 80
 	uiBoxMargin    = 2
-	uiBoxMaxHeight = 26
+	uiBoxMaxHeight = 30
 
 	footerHeight = 3 // hint + breathing room
 

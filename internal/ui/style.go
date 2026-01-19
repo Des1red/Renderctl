@@ -142,7 +142,11 @@ func confirmSubtitleForMode(mode string) string {
 
 func executeDisableReason(ctx *uiContext) string {
 	switch ctx.working.Mode {
-
+	case "scan":
+		// SSDP disabled → TV IP required
+		if !ctx.working.Discover && ctx.working.TIP == "" {
+			return "TV IP is required when SSDP discovery is disabled"
+		}
 	case "auto":
 		if ctx.working.TIP == "" {
 			return "TV IP is required"

@@ -28,6 +28,8 @@ func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 			{Label: "Serve port", Type: FieldString, String: &cfg.ServePort},
 
 			// auto-only
+			{Label: "SSDP discovery", Type: FieldBool, Bool: &cfg.Discover},
+			{Label: "SSDP timeout (seconds)", Type: FieldDuration, Duration: &cfg.SSDPTimeout},
 			{Label: "Probe only", Type: FieldBool, Bool: &cfg.ProbeOnly},
 
 			{Label: "Auto cache", Type: FieldBool, Bool: &cfg.AutoCache},
