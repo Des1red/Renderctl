@@ -5,6 +5,7 @@ import (
 	"renderctl/internal/cache"
 	"renderctl/internal/identity"
 	"renderctl/internal/models"
+	myidentity "renderctl/internal/servers/identity"
 	"renderctl/internal/ssdp"
 	"renderctl/internal/utils"
 	"renderctl/logger"
@@ -69,6 +70,11 @@ func TrySSDP(cfg *models.Config) bool {
 
 	tv, err := ssdp.FetchAndDetect(devices[0].Location)
 	if err != nil {
+		return false
+	}
+	selfUUID, err := myidentity.FetchUUID()
+	if err == nil && tv.UDN == "uuid:"+selfUUID {
+		logger.Notify("Ignoring self SSDP MediaServer (%s)", tv.UDN)
 		return false
 	}
 

@@ -12,7 +12,9 @@ type DeviceDescription struct {
 	Device struct {
 		Manufacturer string `xml:"manufacturer"`
 		ModelName    string `xml:"modelName"`
-		ServiceList  struct {
+		UDN          string `xml:"UDN"`
+
+		ServiceList struct {
 			Services []struct {
 				ServiceType string `xml:"serviceType"`
 				ControlURL  string `xml:"controlURL"`
@@ -30,6 +32,8 @@ type DetectedTV struct {
 
 	AVTransportSCPD       string
 	ConnectionManagerCtrl string
+
+	UDN string
 }
 
 func FetchAndDetect(location string) (*DetectedTV, error) {
@@ -99,7 +103,9 @@ func FetchAndDetect(location string) (*DetectedTV, error) {
 
 		AVTransportSCPD:       fix(avTransportSCPD),
 		ConnectionManagerCtrl: fix(connMgrCtrl),
+		UDN:                   dd.Device.UDN,
 	}, nil
+
 }
 
 func detectVendor(m string) string {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"renderctl/internal/models"
+	"renderctl/internal/servers/identity"
 
 	"renderctl/logger"
 )
@@ -34,11 +35,22 @@ func ServeStream(
 	container StreamContainer,
 	source StreamSource,
 ) {
+	// ---- LOAD SERVER UUID (same identity as default server) ----
+	serverUUID, err := identity.FetchUUID()
+	if err != nil {
+		logger.Fatal("Failed to load server UUID: %v", err)
+	}
 	cfg.ServerUp = true
 
 	mux := http.NewServeMux()
 
+	// ---- REGISTER IDENTITY ENDPOINTS ----
+	identity.RegisterHandlers(mux, serverUUID)
+	// ---- STREAM HANDLER ----
 	mux.HandleFunc(streamPath, func(w http.ResponseWriter, r *http.Request) {
+		// ---- HEADER POLISH (MUST BE FIRST) ----
+		identity.PolishHeaders(w)
+
 		clientIP := strings.Split(r.RemoteAddr, ":")[0]
 
 		mu.Lock()
@@ -109,10 +121,16 @@ func ServeStream(
 
 	go func() {
 		logger.Success(
-			"Go HTTP stream server listening: %s%s (mime=%s)",
+			"HTTP stream server listening: %s%s (mime=%s)",
 			"http://"+cfg.LIP+":"+cfg.ServePort,
 			streamPath,
 			mime,
+		)
+
+		// ---- SSDP ANNOUNCE (CRITICAL) ----
+		identity.AnnounceMediaServer(
+			serverUUID,
+			"http://"+cfg.LIP+":"+cfg.ServePort+"/device.xml",
 		)
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
