@@ -2,6 +2,7 @@ package stream
 
 import (
 	"errors"
+	"renderctl/internal/servers"
 	"strings"
 )
 
@@ -29,29 +30,13 @@ func (p passthroughContainer) MimeCandidates() []string {
 	}
 }
 
-// Container interface: designed to extend later (mp4, mkv, etc)
-type StreamContainer interface {
-	Key() string
-	MimeCandidates() []string
-}
-
-// Source interface: later you can implement screen capture, remote proxy, etc
-type StreamSource interface {
-	Open() (StreamReadCloser, error)
-}
-
-type StreamReadCloser interface {
-	Read(p []byte) (int, error)
-	Close() error
-}
-
 // Registry for containers
-var containerRegistry = map[string]StreamContainer{
+var containerRegistry = map[string]servers.StreamContainer{
 	"ts":          tsContainer{},
 	"passthrough": passthroughContainer{},
 }
 
-func GetContainer(key string) (StreamContainer, error) {
+func GetContainer(key string) (servers.StreamContainer, error) {
 	c, ok := containerRegistry[strings.ToLower(strings.TrimSpace(key))]
 	if !ok {
 		return nil, errors.New("unknown container: " + key)

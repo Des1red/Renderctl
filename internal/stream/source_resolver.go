@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"renderctl/internal/servers"
 	"renderctl/logger"
 )
 
@@ -29,7 +30,7 @@ func newResolverSource(url string) *resolverSource {
 	return &resolverSource{url: url}
 }
 
-func (r *resolverSource) Open() (StreamReadCloser, error) {
+func (r *resolverSource) Open() (servers.StreamReadCloser, error) {
 	logger.Notify("Starting yt-dlp resolver for URL")
 
 	// yt-dlp command:

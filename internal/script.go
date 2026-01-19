@@ -31,7 +31,7 @@ func runWithConfig(cfg *models.Config) {
 	avtransport.Run(target, meta)
 }
 
-func RunScript(cfg *models.Config, stop <-chan struct{}) {
+func RunScript(cfg *models.Config) {
 	if cfg.SelectCache != -1 {
 		logger.Notify("Using explicitly selected cached device")
 		runWithConfig(cfg)
@@ -40,7 +40,7 @@ func RunScript(cfg *models.Config, stop <-chan struct{}) {
 	mode := utils.NormalizeMode(cfg.Mode)
 	switch mode {
 	case "stream":
-		runStream(cfg, stop)
+		runStream(cfg)
 	case "scan":
 		runScan(cfg)
 	case "manual":
@@ -114,7 +114,7 @@ func runScan(cfg *models.Config) {
 	logger.Success("Mode : Scan , completed")
 }
 
-func runStream(cfg *models.Config, stop <-chan struct{}) {
+func runStream(cfg *models.Config) {
 	// Implemented in internal/stream_mode.go (next section)
-	stream.StartStreamPlay(cfg, stop)
+	stream.StartStreamPlay(cfg)
 }

@@ -3,10 +3,11 @@ package stream
 import (
 	"errors"
 	"renderctl/internal/models"
+	"renderctl/internal/servers"
 )
 
 // This is generic in structure; later you replace with screen capture sources etc.
-func BuildStreamSource(cfg *models.Config) (StreamSource, error) {
+func BuildStreamSource(cfg *models.Config) (servers.StreamSource, error) {
 	kind := ResolveStreamKind(cfg)
 
 	switch kind {

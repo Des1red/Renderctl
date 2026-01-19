@@ -1,7 +1,9 @@
 package stream
 
+import "renderctl/internal/servers"
+
 func selectMime(
-	container StreamContainer,
+	container servers.StreamContainer,
 	supported map[string][]string,
 ) string {
 	// If TV returned nothing → safe default for streaming

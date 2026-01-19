@@ -1,4 +1,4 @@
-package internal
+package servers
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"renderctl/logger"
 )
 
-func ServeDirGo(cfg models.Config, stop <-chan struct{}) {
+func InitDefaultServer(cfg models.Config, stop <-chan struct{}) {
 	cfg.ServerUp = true
 	fs := http.FileServer(http.Dir(cfg.LDir))
 

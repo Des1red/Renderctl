@@ -1,5 +1,5 @@
 // internal/serverStream.go
-package stream
+package servers
 
 import (
 	"io"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"renderctl/internal/models"
+
 	"renderctl/logger"
 )
 

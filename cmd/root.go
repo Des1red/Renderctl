@@ -8,6 +8,8 @@ import (
 	"renderctl/internal"
 	"renderctl/internal/cache"
 	"renderctl/internal/models"
+	"renderctl/internal/servers"
+	"renderctl/internal/stream"
 	"renderctl/internal/ui"
 	"renderctl/internal/utils"
 	"renderctl/logger"
@@ -57,14 +59,16 @@ func Execute() {
 		cfg.LIP = utils.LocalIP(cfg.LIP)
 		if mode != "scan" && !cfg.ProbeOnly {
 			if mode != "stream" {
-				internal.ServeDirGo(cfg, stop)
+				servers.InitDefaultServer(cfg, stop)
+			} else if mode == "stream" {
+				stream.InitStreamServer(&cfg, stop)
 			}
 		}
 		time.Sleep(500 * time.Millisecond)
 		serverRunning = true
 	}
 
-	internal.RunScript(&cfg, stop)
+	internal.RunScript(&cfg)
 
 	if !serverRunning {
 		return

@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"renderctl/internal/servers"
 	"renderctl/logger"
 )
 
 type fileSource struct{ path string }
 
-func (f fileSource) Open() (StreamReadCloser, error) {
+func (f fileSource) Open() (servers.StreamReadCloser, error) {
 	return os.Open(f.path)
 }
 
@@ -18,7 +19,7 @@ type urlSource struct {
 	url string
 }
 
-func (u urlSource) Open() (StreamReadCloser, error) {
+func (u urlSource) Open() (servers.StreamReadCloser, error) {
 	resp, err := http.Get(u.url)
 	if err != nil {
 		return nil, err
@@ -33,7 +34,7 @@ type rollingFileSource struct {
 	opened  bool
 }
 
-func (r *rollingFileSource) Open() (StreamReadCloser, error) {
+func (r *rollingFileSource) Open() (servers.StreamReadCloser, error) {
 	logger.Notify("Opening rolling file source")
 
 	if r.opened {
