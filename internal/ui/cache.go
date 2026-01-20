@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"net/url"
 	"renderctl/internal/cache"
 	"sort"
 )
@@ -38,6 +39,16 @@ func applyCachedDevice(ctx *uiContext, ip string, dev cache.Device) {
 	ctx.working.TVVendor = dev.Vendor
 	ctx.working.CachedControlURL = dev.ControlURL
 	ctx.working.CachedConnMgrURL = dev.ConnMgrURL
+
+	// ---- UI-only derivation from ControlURL ----
+	if dev.ControlURL != "" {
+		if u, err := url.Parse(dev.ControlURL); err == nil {
+			if u.Port() != "" {
+				ctx.working.TPort = u.Port()
+			}
+			ctx.working.TPath = u.Path
+		}
+	}
 }
 
 func cacheSelect(index int) (string, cache.Device, bool) {

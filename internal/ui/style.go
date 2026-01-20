@@ -147,6 +147,9 @@ func executeDisableReason(ctx *uiContext) string {
 		if !ctx.working.Discover && ctx.working.TIP == "" {
 			return "TV IP is required when SSDP discovery is disabled"
 		}
+		if ctx.working.LIP == "" && ctx.working.Discover {
+			return "Local IP is required when SSDP discovery is enabled"
+		}
 	case "auto":
 		if ctx.working.TIP == "" {
 			return "TV IP is required"

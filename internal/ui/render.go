@@ -329,12 +329,31 @@ func renderConfirmScreen(
 			}
 
 		case FieldInt:
-			if f.Int != nil && *f.Int != 0 {
+			if f.Int == nil {
+				value = "(default)"
+				style = styles.Dim
+				break
+			}
+
+			// Select cache index: 0 is VALID
+			if f.Label == "Select cache index" {
+				if *f.Int >= 0 {
+					value = fmt.Sprintf("%d", *f.Int)
+				} else {
+					value = "(not set)"
+					style = styles.Dim
+				}
+				break
+			}
+
+			// generic int logic
+			if *f.Int != 0 {
 				value = fmt.Sprintf("%d", *f.Int)
 			} else {
 				value = "(default)"
 				style = styles.Dim
 			}
+
 		case FieldDuration:
 			if f.Duration != nil && *f.Duration > 0 {
 				value = fmt.Sprintf("%d", int(*f.Duration/time.Second))

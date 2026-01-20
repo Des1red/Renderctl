@@ -12,6 +12,7 @@ func buildFieldsForMode(cfg *models.Config, mode string) []Field {
 			{Label: "SSDP discovery", Type: FieldBool, Bool: &cfg.Discover},
 			{Label: "SSDP timeout (seconds)", Type: FieldDuration, Duration: &cfg.SSDPTimeout},
 			{Label: "TV IP", Type: FieldString, String: &cfg.TIP},
+			{Label: "Local IP", Type: FieldString, String: &cfg.LIP},
 			{Label: "Auto cache", Type: FieldBool, Bool: &cfg.AutoCache},
 			{Label: "Use cache", Type: FieldBool, Bool: &cfg.UseCache},
 		}
@@ -87,6 +88,8 @@ func isFieldDisabled(f Field, ctx *uiContext) bool {
 	case "Auto cache", "Select cache index":
 		return !ctx.working.UseCache
 
+	case "TV Port", "TV Path", "TV Vendor", "TV IP":
+		return ctx.working.SelectCache >= 0
 	// SSDP timeout only makes sense if SSDP is enabled
 	case "SSDP timeout (seconds)":
 		return !ctx.working.Discover
@@ -94,6 +97,10 @@ func isFieldDisabled(f Field, ctx *uiContext) bool {
 	// Local file disabled ONLY when auto + probe-only
 	case "Local file":
 		return ctx.working.Mode == "auto" && ctx.working.ProbeOnly
+	// Local IP disabled when scan + SSDP enabled
+	case "Local IP":
+		return ctx.working.Mode == "scan" && !ctx.working.Discover
+
 	}
 
 	return false

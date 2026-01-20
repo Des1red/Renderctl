@@ -327,8 +327,10 @@ func isExecuteDisabled(ctx *uiContext) bool {
 		// If SSDP is disabled, user must provide a TV IP
 		if !ctx.working.Discover {
 			return ctx.working.TIP == ""
+		} else {
+			return ctx.working.LIP == ""
 		}
-		return false
+
 	case "auto":
 		// required
 		if ctx.working.LIP == "" || ctx.working.TIP == "" {
