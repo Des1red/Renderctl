@@ -23,6 +23,28 @@ func handleKeyEvent(
 	editBuffer *string,
 	confirmSelected *int,
 ) {
+	if *state == stateBoot {
+		select {
+		case <-ctx.bootSkip:
+		default:
+			close(ctx.bootSkip)
+		}
+
+		select {
+		case <-ctx.bootDoneCh:
+		default:
+			close(ctx.bootDoneCh)
+		}
+
+		*state = stateModeSelect
+		return
+	}
+
+	if *state == statePopup {
+		handlePopupKey(ev, ctx, state)
+		return
+	}
+
 	// confirm screen is special
 	if *state == stateConfirm {
 		switch ev.Key() {
@@ -137,8 +159,19 @@ func handleConfigKey(
 			if f.Type == FieldString {
 				*f.String = *editBuffer
 			} else if f.Type == FieldInt {
-				if v, err := strconv.Atoi(*editBuffer); err == nil {
-					*f.Int = v
+				if f.Label == "Select cache index" {
+					// empty input → reset cache
+					if strings.TrimSpace(*editBuffer) == "" {
+						clearCachedSelection(ctx)
+						*editMode = false
+						*editBuffer = ""
+						return
+					}
+
+					if v, err := strconv.Atoi(*editBuffer); err == nil {
+						*f.Int = v
+						openCachePopup(ctx, v, state)
+					}
 				}
 			} else if f.Type == FieldDuration {
 				if v, err := strconv.Atoi(*editBuffer); err == nil {
@@ -236,7 +269,11 @@ func handleConfigKey(
 			*editBuffer = *f.String
 		case FieldInt:
 			*editMode = true
-			*editBuffer = fmt.Sprintf("%d", *f.Int)
+			if f.Label == "Select cache index" && *f.Int < 0 {
+				*editBuffer = ""
+			} else {
+				*editBuffer = fmt.Sprintf("%d", *f.Int)
+			}
 		case FieldDuration:
 			*editMode = true
 			*editBuffer = fmt.Sprintf("%d", int(*f.Duration/time.Second))
@@ -247,6 +284,37 @@ func handleConfigKey(
 		*editMode = false
 		*editBuffer = ""
 		*state = stateModeSelect
+	}
+}
+
+func handlePopupKey(ev *tcell.EventKey, ctx *uiContext, state *uiState) {
+	p := ctx.popup
+	if p == nil {
+		*state = stateConfig
+		return
+	}
+
+	switch ev.Key() {
+
+	case tcell.KeyLeft, tcell.KeyRight, tcell.KeyUp, tcell.KeyDown:
+		if p.kind == popupConfirmCache {
+			p.selected = (p.selected + 1) % 2
+		}
+
+	case tcell.KeyEnter:
+		if p.kind == popupConfirmCache && p.selected == 0 {
+			applyCachedDevice(ctx, p.ip, p.device)
+			ctx.working.SelectCache = p.index
+		} else {
+			clearCachedSelection(ctx)
+		}
+		ctx.popup = nil
+		*state = stateConfig
+
+	case tcell.KeyEscape:
+		clearCachedSelection(ctx)
+		ctx.popup = nil
+		*state = stateConfig
 	}
 }
 

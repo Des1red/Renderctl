@@ -28,6 +28,8 @@ func Run(cfg *models.Config) {
 
 	// UI context
 	ctx := &uiContext{cfg: cfg}
+	ctx.bootSkip = make(chan struct{})
+	ctx.bootDoneCh = make(chan struct{})
 
 	state := stateBoot
 	confirmSelected := 0
@@ -53,10 +55,14 @@ func Run(cfg *models.Config) {
 			confirmSelected,
 		)
 
-		//  BOOT HANDLING
+		// boot screen special handling
 		if state == stateBoot {
-			state = stateModeSelect
-			continue
+			select {
+			case <-ctx.bootDoneCh:
+				state = stateModeSelect
+				continue
+			default:
+			}
 		}
 
 		ev := screen.PollEvent()

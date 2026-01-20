@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -21,9 +22,10 @@ func renderState(
 ) {
 	switch state {
 	case stateBoot:
-		screen.Clear()
-		drawBootScreen(screen, styles)
-		state = stateModeSelect
+		if !ctx.bootDone {
+			ctx.bootDone = true
+			go drawBootScreen(screen, styles, ctx)
+		}
 
 	case stateModeSelect:
 		renderModeScreen(screen, styles, selectedMode)
@@ -48,6 +50,9 @@ func renderState(
 			fields,
 			confirmSelected,
 		)
+	case statePopup:
+		renderPopup(screen, styles, ctx)
+
 	}
 }
 
@@ -55,6 +60,9 @@ const (
 	uiBoxWidth     = 80
 	uiBoxMargin    = 2
 	uiBoxMaxHeight = 30
+
+	popupWidth  = 80
+	popupHeight = 16
 
 	footerHeight = 3 // hint + breathing room
 
@@ -371,6 +379,48 @@ func renderConfirmScreen(
 	drawText(s, styleConfirm, x+3, rowY, "[ Confirm & Execute ]")
 	rowY++
 	drawText(s, styleCancel, x+3, rowY, "[ Cancel ]")
+
+	s.Show()
+}
+
+func renderPopup(s tcell.Screen, styles UIStyles, ctx *uiContext) {
+	p := ctx.popup
+	if p == nil {
+		return
+	}
+
+	// THIS IS THE KEY LINE
+	s.Clear()
+
+	w, h := s.Size()
+	boxW := popupWidth
+	boxH := popupHeight
+	x := (w - boxW) / 2
+	y := (h - boxH) / 2
+
+	drawBox(s, styles.Border, x, y, boxW, boxH)
+
+	drawText(s, styles.Title, x+2, y+1, p.title)
+
+	lines := strings.Split(p.message, "\n")
+	for i, l := range lines {
+		drawText(s, styles.Normal, x+2, y+3+i, l)
+	}
+
+	if p.kind == popupConfirmCache {
+		yesStyle := styles.Normal
+		noStyle := styles.Normal
+		if p.selected == 0 {
+			yesStyle = styles.Select
+		} else {
+			noStyle = styles.Select
+		}
+
+		drawText(s, yesStyle, x+10, y+boxH-2, "[ Yes ]")
+		drawText(s, noStyle, x+30, y+boxH-2, "[ No ]")
+	} else {
+		drawText(s, styles.Select, x+20, y+boxH-2, "[ OK ]")
+	}
 
 	s.Show()
 }

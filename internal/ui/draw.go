@@ -67,8 +67,11 @@ func drawFieldRow(
 		value = *f.String
 
 	case FieldInt:
-		value = fmt.Sprintf("%d", *f.Int)
-
+		if f.Label == "Select cache index" && *f.Int < 0 {
+			value = ""
+		} else {
+			value = fmt.Sprintf("%d", *f.Int)
+		}
 	case FieldDuration:
 		if f.Duration != nil && *f.Duration > 0 {
 			value = fmt.Sprintf("%d", int(*f.Duration/time.Second))
@@ -135,7 +138,7 @@ type drawOp func()
 // BOOT SCREEN SEQUENCE //
 // ====================== //
 
-func drawBootScreen(s tcell.Screen, styles UIStyles) {
+func drawBootScreen(s tcell.Screen, styles UIStyles, ctx *uiContext) {
 	w, h := s.Size()
 
 	boxW := uiBoxWidth
@@ -151,6 +154,14 @@ func drawBootScreen(s tcell.Screen, styles UIStyles) {
 	}
 
 	ops := make(chan drawOp, 256)
+	checkSkip := func() bool {
+		select {
+		case <-ctx.bootSkip:
+			return true
+		default:
+			return false
+		}
+	}
 
 	// ---- SINGLE SCREEN OWNER ----
 	go func() {
@@ -171,6 +182,9 @@ func drawBootScreen(s tcell.Screen, styles UIStyles) {
 		boxDone,
 	)
 	<-boxDone
+	if checkSkip() {
+		return
+	}
 
 	// ---- PHASE 2: TITLE + MODES (PARALLEL) ----
 	titleDone := make(chan struct{})
@@ -199,6 +213,9 @@ func drawBootScreen(s tcell.Screen, styles UIStyles) {
 
 	<-titleDone
 	<-modesDone
+	if checkSkip() {
+		return
+	}
 
 	// ---- PHASE 3: BORDER SWEEP ----
 	sweepDone := make(chan struct{})
@@ -214,6 +231,15 @@ func drawBootScreen(s tcell.Screen, styles UIStyles) {
 	<-sweepDone
 
 	close(ops)
+
+	// signal completion (safe close)
+	select {
+	case <-ctx.bootDoneCh:
+		// already closed
+	default:
+		close(ctx.bootDoneCh)
+	}
+
 }
 
 // ====================== //
