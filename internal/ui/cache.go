@@ -57,7 +57,31 @@ func cacheSelect(index int) (string, cache.Device, bool) {
 	}
 
 	ip := keys[index]
-	return ip, store[ip], true
+	cd := store[ip]
+
+	if cd == nil || len(cd.Endpoints) == 0 {
+		return "", cache.Device{}, false
+	}
+
+	// pick primary endpoint deterministically
+	var urls []string
+	for u, ep := range cd.Endpoints {
+		if len(ep.Actions) > 0 {
+			urls = append(urls, u)
+		}
+	}
+	sort.Strings(urls)
+
+	ep := cd.Endpoints[urls[0]]
+
+	return ip, cache.Device{
+		Vendor:     cd.Vendor,
+		ControlURL: ep.ControlURL,
+		ConnMgrURL: ep.ConnMgrURL,
+		Identity:   cd.Identity,
+		Actions:    ep.Actions,
+		Media:      ep.Media,
+	}, true
 }
 
 func clearCachedSelection(ctx *uiContext) {

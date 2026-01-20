@@ -34,7 +34,7 @@ func printHelp() {
 	printFlag(w, "--list-cache", "", "			          List cached devices")
 	printFlag(w, "--forget-cache", "string", "	 Forget cache (interactive | IP | all)")
 	printFlag(w, "--select-cache", "int", "		    Select cached device by index")
-
+	printFlag(w, "--details-cache", "int", "List cached device with details")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Scan:")
 	printFlag(w, "--subnet", "  string", "   Subnet to scan (e.g. 192.168.1.0/24)")

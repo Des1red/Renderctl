@@ -7,12 +7,18 @@ import (
 	"renderctl/logger"
 	"sort"
 	"strings"
+	"time"
 )
+
+/*
+======== CACHE WRITE PATH ========
+*/
 
 func StoreInCache(cfg *models.Config, update Device) {
 	if !cfg.UseCache || cfg.SelectCache != -1 {
 		return
 	}
+
 	logger.Notify("=========== SSDP DEVICE ===========")
 	logger.Notify("IP        : %s", cfg.TIP)
 	logger.Notify("Vendor    : %s", update.Vendor)
@@ -36,62 +42,56 @@ func StoreInCache(cfg *models.Config, update Device) {
 	logger.Notify("===================================")
 
 	store, _ := Load()
-	dev := store[cfg.TIP]
-	if dev.ControlURL != "" && dev.ControlURL == update.ControlURL {
-		logger.Notify("Cache entry already up-to-date for %s", update.ControlURL)
-		return
-	}
 
-	alreadyStored := dev.ControlURL != ""
-
-	if !cfg.AutoCache && !alreadyStored {
-		if !utils.Confirm("Store this AVTransport endpoint in cache?") {
-			return
+	// ---- DEVICE LEVEL ----
+	cd, ok := store[cfg.TIP]
+	if !ok {
+		cd = &CachedDevice{
+			Vendor:    update.Vendor,
+			Identity:  update.Identity,
+			Endpoints: map[string]*Endpoint{},
 		}
-	} else {
-		logger.Notify("=============== CACHE ===============")
-		logger.Notify("%s already stored in cache", dev.ControlURL)
-		logger.Notify("=============== CACHE ===============")
+		store[cfg.TIP] = cd
 	}
 
-	// --- merge ControlURL ---
-	if dev.ControlURL == "" && update.ControlURL != "" {
-		dev.ControlURL = update.ControlURL
+	if cd.Vendor == "" && update.Vendor != "" {
+		cd.Vendor = update.Vendor
 	}
 
-	// --- merge ConnectionManager URL ---
-	if dev.ConnMgrURL == "" && update.ConnMgrURL != "" {
-		dev.ConnMgrURL = update.ConnMgrURL
-	}
-
-	// --- merge Vendor ---
-	if dev.Vendor == "" && update.Vendor != "" {
-		dev.Vendor = update.Vendor
-	}
-
-	// --- merge Identity ---
 	if update.Identity != nil {
-		dev.Identity = update.Identity
+		cd.Identity = update.Identity
 	}
 
-	// --- merge Actions ---
-	if update.Actions != nil {
-		if dev.Actions == nil {
-			dev.Actions = map[string]bool{}
+	// ---- ENDPOINT LEVEL ----
+	if update.ControlURL != "" {
+		ep, ok := cd.Endpoints[update.ControlURL]
+		if !ok {
+			ep = &Endpoint{
+				ControlURL: update.ControlURL,
+				SeenAt:     time.Now(),
+			}
+			cd.Endpoints[update.ControlURL] = ep
 		}
-		for k, v := range update.Actions {
-			dev.Actions[k] = v
+
+		ep.SeenAt = time.Now()
+
+		if update.ConnMgrURL != "" {
+			ep.ConnMgrURL = update.ConnMgrURL
+		}
+		if update.Actions != nil {
+			ep.Actions = update.Actions
+		}
+		if update.Media != nil {
+			ep.Media = update.Media
 		}
 	}
 
-	// --- merge Media ---
-	if update.Media != nil {
-		dev.Media = update.Media
-	}
-
-	store[cfg.TIP] = dev
 	_ = Save(store)
 }
+
+/*
+======== LEGACY READ PATH ========
+*/
 
 func LoadCachedTV(cfg *models.Config) {
 	ip, dev, ok := selectFromCache(cfg.SelectCache)
@@ -120,8 +120,145 @@ func selectFromCache(index int) (string, Device, bool) {
 	}
 
 	ip := keys[index]
-	return ip, store[ip], true
+	cd := store[ip]
+
+	// derive primary endpoint deterministically
+	var urls []string
+	for u, ep := range cd.Endpoints {
+		if len(ep.Actions) > 0 {
+			urls = append(urls, u)
+		}
+	}
+	sort.Strings(urls)
+
+	if len(urls) == 0 {
+		return "", Device{}, false
+	}
+
+	primary := cd.Endpoints[urls[0]]
+
+	return ip, Device{
+		Vendor:     cd.Vendor,
+		ControlURL: pick(primary, func(e *Endpoint) string { return e.ControlURL }),
+		ConnMgrURL: pick(primary, func(e *Endpoint) string { return e.ConnMgrURL }),
+		Identity:   cd.Identity,
+		Actions:    pick(primary, func(e *Endpoint) map[string]bool { return e.Actions }),
+		Media:      pick(primary, func(e *Endpoint) map[string][]string { return e.Media }),
+	}, true
 }
+
+func pick[T any](ep *Endpoint, f func(*Endpoint) T) T {
+	var zero T
+	if ep == nil {
+		return zero
+	}
+	return f(ep)
+}
+
+func handleCacheDetails(index int) {
+	store, err := Load()
+	if err != nil {
+		logger.Fatal("Error: %v", err)
+	}
+
+	if len(store) == 0 {
+		logger.Notify("Cache is empty.")
+		return
+	}
+
+	// sorted IPs (same ordering everywhere)
+	keys := make([]string, 0, len(store))
+	for ip := range store {
+		keys = append(keys, ip)
+	}
+	sort.Strings(keys)
+
+	if index < 0 || index >= len(keys) {
+		logger.Fatal("Invalid cache index: %d", index)
+	}
+
+	ip := keys[index]
+	cd := store[ip]
+
+	logger.Info("\n===== CACHE DETAILS =====")
+	logger.Result("Index   : %d", index)
+	logger.Result("IP      : %s", ip)
+	logger.Result("Vendor  : %s", col(cd.Vendor, 20))
+
+	// ---- Identity ----
+	if cd.Identity != nil {
+		logger.Info("\nIdentity:")
+		for _, k := range []string{
+			"friendly_name",
+			"manufacturer",
+			"model_name",
+			"model_number",
+			"udn",
+			"presentation",
+		} {
+			if v, ok := cd.Identity[k]; ok {
+				logger.Result(" %-14s: %v", k, v)
+			}
+		}
+	}
+
+	// ---- Endpoints ----
+	if len(cd.Endpoints) == 0 {
+		logger.Notify("\nNo AVTransport endpoints stored.")
+		return
+	}
+
+	// deterministic endpoint order
+	var urls []string
+	for u := range cd.Endpoints {
+		urls = append(urls, u)
+	}
+	sort.Strings(urls)
+
+	logger.Info("\nAVTransport Endpoints:")
+
+	for i, u := range urls {
+
+		ep := cd.Endpoints[u]
+		playable := len(ep.Actions) > 0
+
+		logger.Info("\n [%d]", i)
+		logger.Result(" Playable   : %v", playable)
+		logger.Result(" ControlURL : %s", ep.ControlURL)
+		logger.Result(" ConnMgrURL : %s", col(ep.ConnMgrURL, 20))
+		logger.Result(" SeenAt     : %s", ep.SeenAt.Format(time.RFC3339))
+
+		if len(ep.Actions) > 0 {
+			logger.Info(" Actions:")
+			var acts []string
+			for a := range ep.Actions {
+				acts = append(acts, a)
+			}
+			sort.Strings(acts)
+			for _, a := range acts {
+				logger.Result("  - %s", a)
+			}
+		}
+
+		if len(ep.Media) > 0 {
+			logger.Info(" Media:")
+			var keys []string
+			for k := range ep.Media {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				logger.Result("  - %s: %v", k, ep.Media[k])
+			}
+		}
+	}
+
+	logger.Info("\n=========================\n")
+}
+
+/*
+======== CACHE COMMANDS ========
+*/
 
 func sortedCache(store Store) []string {
 	keys := make([]string, 0, len(store))
@@ -138,12 +275,65 @@ func HandleCacheCommands(cfg models.Config) bool {
 		return true
 	}
 
+	if cfg.CacheDetails >= 0 {
+		handleCacheDetails(cfg.CacheDetails)
+		return true
+	}
+
 	if cfg.ForgetCache != "" {
 		handleForgetCache(cfg)
 		return true
 	}
 
 	return false
+}
+
+func handleListCache() {
+	store, err := Load()
+	if err != nil {
+		logger.Fatal("Error: %v", err)
+	}
+
+	if len(store) == 0 {
+		logger.Info("Cache is empty.")
+		return
+	}
+
+	logger.Info("\n\nCached AVTransport devices:\n\n")
+	fmt.Printf(
+		" %-3s %-15s %-12s %-60s %-60s\n",
+		"#", "IP", "Vendor", "ControlURL", "ConnMgrURL",
+	)
+	fmt.Println(strings.Repeat("-", 160))
+
+	keys := sortedCache(store)
+
+	for i, ip := range keys {
+		cd := store[ip]
+
+		var urls []string
+		for u, ep := range cd.Endpoints {
+			if len(ep.Actions) > 0 {
+				urls = append(urls, u)
+			}
+		}
+
+		sort.Strings(urls)
+
+		var ep *Endpoint
+		if len(urls) > 0 {
+			ep = cd.Endpoints[urls[0]]
+		}
+
+		fmt.Printf(
+			"[%d] %-15s %-12s %-60s %-60s\n",
+			i,
+			ip,
+			col(cd.Vendor, 12),
+			col(pick(ep, func(e *Endpoint) string { return e.ControlURL }), 60),
+			col(pick(ep, func(e *Endpoint) string { return e.ConnMgrURL }), 60),
+		)
+	}
 }
 
 func handleForgetCache(cfg models.Config) {
@@ -167,30 +357,6 @@ func handleForgetCache(cfg models.Config) {
 		logger.Success("Cache cleared.")
 		return
 
-	case "interactive":
-		logger.Info("\nCached devices:")
-		for ip, dev := range store {
-			fmt.Printf(" %s → %s\n", ip, dev.ControlURL)
-		}
-
-		logger.Notify("\nEnter IP to delete: ")
-		var ip string
-		fmt.Scanln(&ip)
-
-		if _, ok := store[ip]; !ok {
-			logger.Notify("IP not found in cache.")
-			return
-		}
-
-		if !utils.Confirm("Delete this entry?") {
-			return
-		}
-
-		delete(store, ip)
-		_ = Save(store)
-		logger.Success("Deleted %s", ip)
-		return
-
 	default:
 		if _, ok := store[cfg.ForgetCache]; !ok {
 			logger.Notify("IP not found in cache.")
@@ -205,40 +371,6 @@ func handleForgetCache(cfg models.Config) {
 		_ = Save(store)
 		logger.Success("Deleted %s", cfg.ForgetCache)
 	}
-}
-
-func handleListCache() {
-	store, err := Load()
-	if err != nil {
-		logger.Fatal("Error: %v", err)
-	}
-
-	if len(store) == 0 {
-		logger.Info("Cache is empty.")
-		return
-	}
-
-	logger.Info("\n\nCached AVTransport devices:\n\n")
-	fmt.Printf(
-		" %-3s  		%-15s  		%-12s  							%-60s  							%-60s\n",
-		"#", "IP", "Vendor", "ControlURL", "ConnMgrURL",
-	)
-	fmt.Println(strings.Repeat("-", 170))
-
-	keys := sortedCache(store)
-
-	for i, ip := range keys {
-		dev := store[ip]
-		fmt.Printf(
-			"[%d]  	%-15s  	   %-12s     			%-60s  					%-60s\n",
-			i,
-			ip,
-			col(dev.Vendor, 12),
-			col(dev.ControlURL, 60),
-			col(dev.ConnMgrURL, 60),
-		)
-	}
-
 }
 
 func col(v string, w int) string {

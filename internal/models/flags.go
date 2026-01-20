@@ -8,11 +8,12 @@ type Config struct {
 	ProbeOnly   bool
 	Discover    bool
 
-	SelectCache int
-	AutoCache   bool
-	UseCache    bool
-	ForgetCache string // "", "all", or IP
-	ListCache   bool
+	SelectCache  int
+	CacheDetails int
+	AutoCache    bool
+	UseCache     bool
+	ForgetCache  string // "", "all", or IP
+	ListCache    bool
 
 	DeepSearch  bool
 	Subnet      string
@@ -34,14 +35,15 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	SSDPTimeout: 60 * time.Second,
-	Interactive: false,
-	SelectCache: -1,
-	AutoCache:   false,
-	UseCache:    true,
-	ProbeOnly:   false,
-	Discover:    false,
-	Mode:        "auto",
-	ServePort:   "8000",
-	LDir:        "./directory",
+	SSDPTimeout:  60 * time.Second,
+	Interactive:  false,
+	SelectCache:  -1,
+	CacheDetails: -1,
+	AutoCache:    false,
+	UseCache:     true,
+	ProbeOnly:    false,
+	Discover:     false,
+	Mode:         "auto",
+	ServePort:    "8000",
+	LDir:         "./directory",
 }

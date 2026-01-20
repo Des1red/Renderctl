@@ -9,6 +9,7 @@ import (
 	"renderctl/internal/ssdp"
 	"renderctl/internal/utils"
 	"renderctl/logger"
+	"sort"
 	"strings"
 	"time"
 )
@@ -27,22 +28,37 @@ func TryCache(cfg *models.Config) bool {
 	}
 
 	store, _ := cache.Load()
-	dev, ok := store[cfg.TIP]
-	if !ok {
+	cd, ok := store[cfg.TIP]
+	if !ok || len(cd.Endpoints) == 0 {
 		return false
 	}
 
+	// pick primary endpoint deterministically
+	var urls []string
+	for u, ep := range cd.Endpoints {
+		if len(ep.Actions) > 0 {
+			urls = append(urls, u)
+		}
+	}
+	sort.Strings(urls)
+
+	if len(urls) == 0 {
+		return false
+	}
+
+	ep := cd.Endpoints[urls[0]]
+
 	logger.Notify("\nCached device found:")
 	logger.Result(" IP        : %s", cfg.TIP)
-	logger.Result(" Vendor    : %s", dev.Vendor)
-	logger.Result(" ControlURL: %s", dev.ControlURL)
+	logger.Result(" Vendor    : %s", cd.Vendor)
+	logger.Result(" ControlURL: %s", ep.ControlURL)
 
 	if !utils.Confirm("Use cached AVTransport endpoint?") {
 		return false
 	}
 
-	//  IMPORTANT: do NOT touch TPath / ControlURL builder
-	cfg.TVVendor = dev.Vendor
+	// IMPORTANT: do NOT touch TPath / ControlURL builder
+	cfg.TVVendor = cd.Vendor
 
 	// Store FULL URL directly
 	cfg.TPath = ""
@@ -50,8 +66,8 @@ func TryCache(cfg *models.Config) bool {
 	cfg.TIP = ""
 
 	// Inject directly into playback phase
-	cfg.CachedControlURL = dev.ControlURL
-	cfg.CachedConnMgrURL = dev.ConnMgrURL
+	cfg.CachedControlURL = ep.ControlURL
+	cfg.CachedConnMgrURL = ep.ConnMgrURL
 
 	return true
 }
