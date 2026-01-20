@@ -55,16 +55,40 @@ func Run(cfg *models.Config) {
 			confirmSelected,
 		)
 
-		// boot screen special handling
 		if state == stateBoot {
+			// poll events asynchronously so animation can finish OR be skipped
+			evCh := make(chan tcell.Event, 1)
+
+			go func() {
+				evCh <- screen.PollEvent()
+			}()
+
 			select {
 			case <-ctx.bootDoneCh:
 				state = stateModeSelect
 				continue
-			default:
+
+			case ev := <-evCh:
+				if kev, ok := ev.(*tcell.EventKey); ok {
+					handleKeyEvent(
+						kev,
+						screen,
+						styles,
+						ctx,
+						&state,
+						&selectedMode,
+						&fields,
+						&selectedField,
+						&editMode,
+						&editBuffer,
+						&confirmSelected,
+					)
+				}
+				continue
 			}
 		}
 
+		// ---- normal mode ----
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
@@ -86,4 +110,5 @@ func Run(cfg *models.Config) {
 			screen.Sync()
 		}
 	}
+
 }
