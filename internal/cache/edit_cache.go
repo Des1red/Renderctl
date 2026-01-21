@@ -19,27 +19,28 @@ func StoreInCache(cfg *models.Config, update Device) {
 		return
 	}
 
-	logger.Notify("=========== SSDP DEVICE ===========")
-	logger.Notify("IP        : %s", cfg.TIP)
-	logger.Notify("Vendor    : %s", update.Vendor)
-	logger.Notify("ControlURL: %s", update.ControlURL)
-	logger.Notify("ConnMgr   : %s", update.ConnMgrURL)
+	logger.Status("================== SSDP DEVICE ==================")
+	logger.Status("===============================================")
+	logger.Status("IP        : %s", cfg.TIP)
+	logger.Status("Vendor    : %s", update.Vendor)
+	logger.Status("ControlURL: %s", update.ControlURL)
+	logger.Status("ConnMgr   : %s", update.ConnMgrURL)
 
 	if update.Identity != nil {
-		logger.Notify("Name      : %v", update.Identity["friendly_name"])
-		logger.Notify("Model     : %v", update.Identity["model_name"])
-		logger.Notify("UDN       : %v", update.Identity["udn"])
+		logger.Status("Name      : %v", update.Identity["friendly_name"])
+		logger.Status("Model     : %v", update.Identity["model_name"])
+		logger.Status("UDN       : %v", update.Identity["udn"])
 	}
 
 	if update.Actions != nil {
-		logger.Notify("Actions   : %d supported", len(update.Actions))
+		logger.Status("Actions   : %d supported", len(update.Actions))
 	}
 
 	if update.Media != nil {
-		logger.Notify("Media     : %d profiles", len(update.Media))
+		logger.Status("Media     : %d profiles", len(update.Media))
 	}
 
-	logger.Notify("===================================")
+	logger.Status("===============================================")
 
 	store, _ := Load()
 
@@ -96,7 +97,7 @@ func StoreInCache(cfg *models.Config, update Device) {
 func LoadCachedTV(cfg *models.Config) {
 	ip, dev, ok := selectFromCache(cfg.SelectCache)
 	if !ok {
-		logger.Fatal("Invalid cache index: %d", cfg.SelectCache)
+		logger.Error("Invalid cache index: %d", cfg.SelectCache)
 	}
 
 	cfg.TIP = ip
@@ -104,7 +105,7 @@ func LoadCachedTV(cfg *models.Config) {
 	cfg.CachedControlURL = dev.ControlURL
 	cfg.CachedConnMgrURL = dev.ConnMgrURL
 
-	logger.Success(
+	logger.Notify(
 		"Using cached device [%d]: %s",
 		cfg.SelectCache,
 		dev.ControlURL,
@@ -165,11 +166,11 @@ func handleCacheDetails(cfg models.Config) {
 
 	store, err := Load()
 	if err != nil {
-		logger.Fatal("Error: %v", err)
+		logger.Error("Error: %v", err)
 	}
 
 	if len(store) == 0 {
-		logger.Notify("Cache is empty.")
+		logger.Status("Cache is empty.")
 		return
 	}
 
@@ -181,7 +182,7 @@ func handleCacheDetails(cfg models.Config) {
 	sort.Strings(keys)
 
 	if index < 0 || index >= len(keys) {
-		logger.Fatal("Invalid cache index: %d", index)
+		logger.Error("Invalid cache index: %d", index)
 	}
 
 	ip := keys[index]
@@ -356,15 +357,15 @@ func HandleCacheCommands(cfg models.Config) bool {
 func handleListCache() {
 	store, err := Load()
 	if err != nil {
-		logger.Fatal("Error: %v", err)
+		logger.Error("Error: %v", err)
 	}
 
 	if len(store) == 0 {
-		logger.Info("Cache is empty.")
+		logger.Status("Cache is empty.")
 		return
 	}
 
-	logger.Info("\n\nCached AVTransport devices:\n\n")
+	logger.Status("\n\nCached AVTransport devices:\n\n")
 	fmt.Printf(
 		" %-3s %-15s %-12s %-60s %-60s\n",
 		"#", "IP", "Vendor", "ControlURL", "ConnMgrURL",
@@ -404,11 +405,11 @@ func handleListCache() {
 func handleForgetCache(cfg models.Config) {
 	store, err := Load()
 	if err != nil {
-		logger.Fatal("%v", err)
+		logger.Error("%v", err)
 	}
 
 	if len(store) == 0 {
-		logger.Notify("Cache is empty.")
+		logger.Status("Cache is empty.")
 		return
 	}
 

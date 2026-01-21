@@ -62,7 +62,7 @@ func ScanSubnet(cfg *models.Config) {
 	logger.Notify("Running subnet scan")
 	ips, err := expandCIDR(cfg.Subnet)
 	if err != nil {
-		logger.Fatal("Invalid subnet: %v", err)
+		logger.Error("Invalid subnet: %v", err)
 	}
 
 	logger.Notify("Scanning subnet %s (%d hosts)", cfg.Subnet, len(ips))
@@ -75,7 +75,7 @@ func ScanSubnet(cfg *models.Config) {
 			continue
 		}
 
-		logger.Info("AVTransport found at %s", ip)
+		logger.Success("AVTransport found at %s", ip)
 	}
-	logger.Success("Subnet scan completed")
+	logger.Done("Subnet scan completed")
 }

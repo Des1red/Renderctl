@@ -94,6 +94,6 @@ func Enrich(baseURL string, timeout time.Duration) (*Info, error) {
 			Presentation: d.Device.Presentation,
 		}, nil
 	}
-	logger.Success("Identity probing completed — ")
+	logger.Done("Identity probing completed — no descriptor found")
 	return nil, fmt.Errorf("no descriptor found")
 }

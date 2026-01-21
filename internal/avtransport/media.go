@@ -36,7 +36,7 @@ func soapRequest(controlURL string, body string, soapAction string) error {
 
 	respBody, _ := io.ReadAll(resp.Body)
 
-	logger.Notify("Status: %d", resp.StatusCode)
+	logger.Info("Status: %d", resp.StatusCode)
 	logger.Info("Response: %s", string(respBody))
 	fmt.Println()
 

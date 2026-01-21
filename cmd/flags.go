@@ -53,6 +53,9 @@ func parseFlags() {
 	pflag.StringVar(&cfg.LDir, "Ldir", cfg.LDir, "Local directory to serve")
 	pflag.StringVar(&cfg.ServePort, "LPort", cfg.ServePort, "Local port to serve")
 
+	// output
+	pflag.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "Enables verbose output")
+
 	// meta
 	version := pflag.BoolP("version", "V", false, "Show version")
 	help := pflag.BoolP("help", "h", false, "Show help")

@@ -35,7 +35,7 @@ type rollingFileSource struct {
 }
 
 func (r *rollingFileSource) Open() (servers.StreamReadCloser, error) {
-	logger.Notify("Opening rolling file source")
+	logger.Status("Opening rolling file source")
 
 	if r.opened {
 		return nil, errors.New("screen stream already active")
@@ -51,7 +51,7 @@ func (r *rollingFileSource) Open() (servers.StreamReadCloser, error) {
 			return nil, err
 		}
 		r.started = true
-		logger.Notify("ffmpeg started")
+		logger.Done("ffmpeg started")
 	}
 
 	rc, err := os.Open(r.path)

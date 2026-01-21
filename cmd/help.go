@@ -61,8 +61,12 @@ func printHelp() {
 	printFlag(w, "--LPort		", "string", "Local port")
 
 	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Output:")
+	printFlag(w, "--verbose		     ", "", "	Enables verbose output")
+
+	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Installer:")
-	printFlag(w, "--install", "", "Run installer (build binary and optional dependencies)")
+	printFlag(w, "--install", "", "   Run installer (build binary and optional dependencies)")
 	printFlag(w, "--dry-run", "", "Show installer actions without executing")
 
 	w.Flush()

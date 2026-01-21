@@ -16,7 +16,7 @@ func runWithConfig(cfg *models.Config) {
 	}
 
 	if controlURL == "" {
-		logger.Fatal("No AVTransport ControlURL resolved (internal state error)")
+		logger.Error("No AVTransport ControlURL resolved (internal state error)")
 		return
 	}
 
@@ -71,11 +71,11 @@ func runAuto(cfg *models.Config) {
 	// 3) Probe fallback
 	ok := avtransport.TryProbe(cfg)
 	if !ok {
-		logger.Fatal("Unable to resolve AVTransport endpoint")
+		logger.Error("Unable to resolve AVTransport endpoint")
 	}
 
 	if cfg.ProbeOnly {
-		logger.Success("Probe completed (no playback).")
+		logger.Done("Probe completed (no playback).")
 		return
 	}
 
@@ -109,7 +109,7 @@ func runScan(cfg *models.Config) {
 	// --- Single-IP probe ---
 	avtransport.TryProbe(cfg)
 
-	logger.Success("Mode : Scan , completed")
+	logger.Done("Mode : Scan , completed")
 }
 
 func runStream(cfg *models.Config) {

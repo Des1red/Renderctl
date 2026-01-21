@@ -17,7 +17,7 @@ import (
 func TryProbe(cfg *models.Config) bool {
 	ok, err := probeAVTransport(cfg)
 	if err != nil {
-		logger.Fatal("Error: %v", err)
+		logger.Error("Error: %v", err)
 	}
 	return ok
 }
@@ -49,9 +49,9 @@ func TryCache(cfg *models.Config) bool {
 	ep := cd.Endpoints[urls[0]]
 
 	logger.Notify("\nCached device found:")
-	logger.Result(" IP        : %s", cfg.TIP)
-	logger.Result(" Vendor    : %s", cd.Vendor)
-	logger.Result(" ControlURL: %s", ep.ControlURL)
+	logger.Status(" IP        : %s", cfg.TIP)
+	logger.Status(" Vendor    : %s", cd.Vendor)
+	logger.Status(" ControlURL: %s", ep.ControlURL)
 
 	if !utils.Confirm("Use cached AVTransport endpoint?") {
 		return false
@@ -129,13 +129,18 @@ func TrySSDP(cfg *models.Config) bool {
 	if len(found) == 0 {
 		logger.Notify("SSDP yielded no cacheable AVTransport targets")
 		return false
+	} else {
+		logger.Result(
+			"SSDP discovery found %d cacheable AVTransport device(s)",
+			len(found),
+		)
 	}
 	selfUUID, _ := myidentity.FetchUUID()
 
 	for _, tv := range found {
 		// Ignore self
 		if selfUUID != "" && tv.UDN == "uuid:"+selfUUID {
-			logger.Notify("Ignoring self SSDP MediaServer (%s)", tv.UDN)
+			logger.Info("Ignoring self SSDP MediaServer (%s)", tv.UDN)
 			continue
 		}
 
@@ -206,7 +211,7 @@ func probeAVTransport(cfg *models.Config) (bool, error) {
 		return false, fmt.Errorf("probe requires -Tip")
 	}
 
-	logger.Notify("Probing AVTransport directly : %s", cfg.TIP)
+	logger.Notify("Probing AVTransport directly: %s", cfg.TIP)
 
 	target, err := Probe(cfg.TIP, 8*time.Second, cfg.DeepSearch)
 	if err != nil {
@@ -245,7 +250,7 @@ func probeAVTransport(cfg *models.Config) (bool, error) {
 
 	cache.StoreInCache(cfg, update)
 
-	logger.Success("\n=== AVTransport Probe Summary ===")
+	logger.Done("AVTransport probe completed")
 
 	logger.Result(" IP        : %s", cfg.TIP)
 	logger.Result(" ControlURL: %s", target.ControlURL)

@@ -66,7 +66,7 @@ func Run(t Target, meta string) {
 		`"urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI"`,
 	)
 	if err != nil {
-		logger.Fatal("%v", err)
+		logger.Error("%v", err)
 		return
 	}
 
@@ -77,6 +77,6 @@ func Run(t Target, meta string) {
 		`"urn:schemas-upnp-org:service:AVTransport:1#Play"`,
 	)
 	if err != nil {
-		logger.Fatal("%v", err)
+		logger.Error("%v", err)
 	}
 }

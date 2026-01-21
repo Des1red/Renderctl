@@ -2,7 +2,6 @@ package stream
 
 import (
 	"io"
-	"os"
 	"os/exec"
 	"renderctl/internal/servers"
 	"renderctl/logger"
@@ -31,7 +30,7 @@ func newResolverSource(url string) *resolverSource {
 }
 
 func (r *resolverSource) Open() (servers.StreamReadCloser, error) {
-	logger.Notify("Starting yt-dlp resolver for URL")
+	logger.Status("Starting media resolver (yt-dlp + ffmpeg)")
 
 	// yt-dlp command:
 	// - output to stdout
@@ -48,11 +47,19 @@ ffmpeg -loglevel error -i pipe:0 -f mpegts -codec copy pipe:1`,
 		return nil, err
 	}
 
-	cmd.Stderr = os.Stderr
+	// cmd.Stderr = os.Stderr
+	cmd.Stderr = nil
 
 	if err := cmd.Start(); err != nil {
 		return nil, err
+	} else {
+		logger.Done("Media resolver started")
 	}
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			logger.Notify("Media resolver exited: %v", err)
+		}
+	}()
 
 	r.cmd = cmd
 

@@ -39,7 +39,7 @@ func ServeStream(
 	// ---- LOAD SERVER UUID (same identity as default server) ----
 	serverUUID, err := identity.FetchUUID()
 	if err != nil {
-		logger.Fatal("Failed to load server UUID: %v", err)
+		logger.Error("Failed to load server UUID: %v", err)
 	}
 	cfg.ServerUp = true
 
@@ -130,7 +130,7 @@ func ServeStream(
 
 		ln, err := net.Listen("tcp", "0.0.0.0:"+cfg.ServePort)
 		if err != nil {
-			logger.Fatal("HTTP stream server listen error: %v", err)
+			logger.Error("HTTP stream server listen error: %v", err)
 			return
 		}
 
@@ -141,7 +141,7 @@ func ServeStream(
 		)
 
 		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("HTTP stream server error: %v", err)
+			logger.Error("HTTP stream server error: %v", err)
 		}
 	}()
 

@@ -24,15 +24,15 @@ func Execute() {
 	// ---- INSTALLER (early exit) ----
 	if requirements.Install {
 		if err := requirements.RunInstaller(); err != nil {
-			logger.Fatal("%v", err)
+			logger.Error("%v", err)
 		}
-		os.Exit(0)
 	}
 
 	if bad, msg := badFlagUse(); bad {
-		logger.Fatal(msg)
-		os.Exit(0)
+		logger.Error(msg)
 	}
+	// Set verbose
+	logger.SetVerbose(cfg.Verbose)
 	// FLAG INVERSION
 	cfg.UseCache = !noCache
 
@@ -57,14 +57,12 @@ func Execute() {
 	mode := utils.NormalizeMode(cfg.Mode)
 	if mode != "scan" && !cfg.ProbeOnly {
 		if cfg.LFile == "" {
-			logger.Fatal("Missing -Lf (media file)")
-			os.Exit(1)
+			logger.Error("Missing -Lf (media file)")
 		}
 
 		if mode != "stream" {
 			if err := utils.ValidateFile(cfg.LFile); err != nil {
-				logger.Fatal("Invalid file: %v", err)
-				os.Exit(1)
+				logger.Error("Invalid file: %v", err)
 			}
 		}
 
@@ -86,7 +84,7 @@ func Execute() {
 		return
 	}
 
-	logger.Info("renderctl running — press Ctrl+C to exit")
+	logger.Status("renderctl running — press Ctrl+C to exit")
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig

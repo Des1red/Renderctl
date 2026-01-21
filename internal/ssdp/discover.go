@@ -162,13 +162,13 @@ func ListenNotify(timeout time.Duration, ip string) ([]SSDPDevice, error) {
 				strings.Contains(resp, "ssdp:byebye")) {
 			dev := parseSSDP(resp)
 			if dev.Location != "" || dev.USN != "" {
-				logger.Success("SSDP NOTIFY device: %s", dev.Location)
+				logger.Info("SSDP NOTIFY device: %s", dev.Location)
 				devices = append(devices, dev)
 			}
 		}
 	}
 
-	logger.Success("SSDP NOTIFY finished — %d device(s) found", len(devices))
+	logger.Done("SSDP NOTIFY finished — %d device(s) found", len(devices))
 	return devices, nil
 }
 
@@ -226,7 +226,7 @@ func Discover(timeout time.Duration) ([]SSDPDevice, error) {
 		dev := parseSSDP(resp)
 
 		if dev.Location != "" || dev.USN != "" {
-			logger.Success("SSDP response: %s", dev.Location)
+			logger.Info("SSDP response: %s", dev.Location)
 			devices[dev.Location] = dev
 		}
 	}
@@ -236,7 +236,7 @@ func Discover(timeout time.Duration) ([]SSDPDevice, error) {
 		result = append(result, d)
 	}
 
-	logger.Success("SSDP discovery completed — %d unique device(s) found", len(result))
+	logger.Done("SSDP discovery completed — %d unique device(s) found", len(result))
 	return result, nil
 }
 
@@ -255,7 +255,7 @@ func parseSSDP(resp string) SSDPDevice {
 			d.USN = strings.TrimSpace(l[4:])
 		}
 	}
-	logger.Result("Parsed SSDP headers: LOCATION=%s SERVER=%s USN=%s",
+	logger.Info("Parsed SSDP headers: LOCATION=%s SERVER=%s USN=%s",
 		d.Location, d.Server, d.USN)
 
 	return d

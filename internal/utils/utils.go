@@ -62,8 +62,7 @@ func LocalIP(ip string) string {
 		if strings.TrimSpace(newip) != "" {
 			ip = newip
 		} else {
-			logger.Fatal("Missing -Lip (local IP for media serving)")
-			os.Exit(1)
+			logger.Error("Missing -Lip (local IP for media serving)")
 		}
 	}
 	return ip
@@ -71,7 +70,7 @@ func LocalIP(ip string) string {
 
 func Confirm(msg string) bool {
 	var ans string
-	logger.Info("%s (y/n): ", msg)
+	logger.Prompt("%s (y/n): ", msg)
 	fmt.Scanln(&ans)
 	ans = strings.ToLower(ans)
 	return ans == "y" || ans == "yes"

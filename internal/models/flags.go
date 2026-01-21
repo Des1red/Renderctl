@@ -5,9 +5,9 @@ import "time"
 type Config struct {
 	Interactive bool
 	Mode        string // "auto" | "manual"
+	Verbose     bool
 
-
-	ProbeOnly   bool
+	ProbeOnly bool
 
 	SelectCache  int
 	CacheDetails int
@@ -57,4 +57,5 @@ var DefaultConfig = Config{
 	Mode:      "auto",
 	ServePort: "8000",
 	LDir:      "./directory",
+	Verbose:   false,
 }

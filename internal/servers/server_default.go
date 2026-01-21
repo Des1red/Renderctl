@@ -10,7 +10,7 @@ import (
 func InitDefaultServer(cfg models.Config, stop <-chan struct{}) {
 	serverUUID, err := identity.FetchUUID()
 	if err != nil {
-		logger.Fatal("Failed to load server UUID: %v", err)
+		logger.Error("Failed to load server UUID: %v", err)
 	}
 
 	cfg.ServerUp = true
@@ -38,7 +38,7 @@ func InitDefaultServer(cfg models.Config, stop <-chan struct{}) {
 		)
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("HTTP server error: %v", err)
+			logger.Error("HTTP server error: %v", err)
 		}
 	}()
 

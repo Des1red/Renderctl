@@ -38,7 +38,7 @@ func StartStreamServer(
 func InitStreamServer(cfg *models.Config, stop <-chan struct{}) {
 	plan, err := ResolveStreamPlan(cfg)
 	if err != nil {
-		logger.Fatal("Stream setup failed: %v", err)
+		logger.Error("Stream setup failed: %v", err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func InitStreamServer(cfg *models.Config, stop <-chan struct{}) {
 
 func StartStreamPlay(cfg *models.Config) {
 	if runtimePlan == nil {
-		logger.Fatal("StreamPlan missing (internal state error)")
+		logger.Error("StreamPlan missing (internal state error)")
 		return
 	}
 
