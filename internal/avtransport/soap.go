@@ -26,7 +26,7 @@ func dynamicBody(body string) string {
 	return reqBody
 }
 
-func soapProbe(controlURL string, body string) bool {
+func probeSOAPEndpoint(controlURL string, body string) bool {
 	if body == "" {
 		body = probeSOAP
 	} else {

@@ -3,6 +3,10 @@ package avtransport
 import (
 	"errors"
 	"fmt"
+	"renderctl/internal/cache"
+	"renderctl/internal/identity"
+	"renderctl/internal/models"
+	"renderctl/logger"
 	"time"
 )
 
@@ -51,7 +55,15 @@ var bigList = []string{
 	"/avtransport/control",
 }
 
-func Probe(ip string, timeout time.Duration, list bool) (*Target, error) {
+func TryProbe(cfg *models.Config) bool {
+	ok, err := probeAVTransport(cfg)
+	if err != nil {
+		logger.Error("Error: %v", err)
+	}
+	return ok
+}
+
+func probeEndpoint(ip string, timeout time.Duration, list bool) (*Target, error) {
 	var endpoints []string
 	if list {
 		endpoints = bigList
@@ -68,7 +80,7 @@ func Probe(ip string, timeout time.Duration, list bool) (*Target, error) {
 
 			controlURL := fmt.Sprintf("http://%s:%s%s", ip, port, path)
 
-			ok := soapProbe(controlURL, "")
+			ok := probeSOAPEndpoint(controlURL, "")
 			if ok {
 				return &Target{
 					ControlURL: controlURL,
@@ -78,4 +90,56 @@ func Probe(ip string, timeout time.Duration, list bool) (*Target, error) {
 	}
 
 	return nil, errors.New("no AVTransport endpoint found")
+}
+
+func probeAVTransport(cfg *models.Config) (bool, error) {
+	if cfg.TIP == "" {
+		return false, fmt.Errorf("probe requires -Tip")
+	}
+
+	logger.Notify("Probing AVTransport directly: %s", cfg.TIP)
+
+	target, err := probeEndpoint(cfg.TIP, 8*time.Second, cfg.DeepSearch)
+	if err != nil {
+		return false, err
+	}
+
+	observedActions := ValidateActions(*target)
+
+	// update cfg so playback can continue
+	cfg.CachedControlURL = target.ControlURL
+	info, err := identity.Enrich(
+		"http://"+cfg.TIP,
+		3*time.Second,
+	)
+	update := cache.Device{
+		ControlURL: target.ControlURL,
+		Vendor:     cfg.TVVendor,
+	}
+
+	if err == nil {
+		update.Identity = map[string]any{
+			"friendly_name": info.FriendlyName,
+			"manufacturer":  info.Manufacturer,
+			"model_name":    info.ModelName,
+			"model_number":  info.ModelNumber,
+			"udn":           info.UDN,
+			"presentation":  info.Presentation,
+		}
+	} else {
+		logger.Notify("%v", err)
+	}
+
+	if len(observedActions) > 0 {
+		update.Actions = observedActions
+	}
+
+	cache.StoreInCache(cfg, update)
+
+	logger.Done("AVTransport probe completed")
+
+	logger.Result(" IP        : %s", cfg.TIP)
+	logger.Result(" ControlURL: %s", target.ControlURL)
+
+	return true, nil
 }

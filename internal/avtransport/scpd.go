@@ -56,7 +56,7 @@ func ValidateActions(target Target) map[string]bool {
 			<InstanceID>0</InstanceID>
 		</u:` + action + `>`
 
-		ok := soapProbe(target.ControlURL, body)
+		ok := probeSOAPEndpoint(target.ControlURL, body)
 		valid[action] = ok
 	}
 

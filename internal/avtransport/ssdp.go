@@ -1,7 +1,6 @@
 package avtransport
 
 import (
-	"fmt"
 	"renderctl/internal/cache"
 	"renderctl/internal/identity"
 	"renderctl/internal/models"
@@ -9,68 +8,9 @@ import (
 	"renderctl/internal/ssdp"
 	"renderctl/internal/utils"
 	"renderctl/logger"
-	"sort"
 	"strings"
 	"time"
 )
-
-func TryProbe(cfg *models.Config) bool {
-	ok, err := probeAVTransport(cfg)
-	if err != nil {
-		logger.Error("Error: %v", err)
-	}
-	return ok
-}
-
-func TryCache(cfg *models.Config) bool {
-	if cfg.TIP == "" {
-		return false
-	}
-
-	store, _ := cache.Load()
-	cd, ok := store[cfg.TIP]
-	if !ok || len(cd.Endpoints) == 0 {
-		return false
-	}
-
-	// pick primary endpoint deterministically
-	var urls []string
-	for u, ep := range cd.Endpoints {
-		if len(ep.Actions) > 0 {
-			urls = append(urls, u)
-		}
-	}
-	sort.Strings(urls)
-
-	if len(urls) == 0 {
-		return false
-	}
-
-	ep := cd.Endpoints[urls[0]]
-
-	logger.Notify("\nCached device found:")
-	logger.Status(" IP        : %s", cfg.TIP)
-	logger.Status(" Vendor    : %s", cd.Vendor)
-	logger.Status(" ControlURL: %s", ep.ControlURL)
-
-	if !utils.Confirm("Use cached AVTransport endpoint?") {
-		return false
-	}
-
-	// IMPORTANT: do NOT touch TPath / ControlURL builder
-	cfg.TVVendor = cd.Vendor
-
-	// Store FULL URL directly
-	cfg.TPath = ""
-	cfg.TPort = ""
-	cfg.TIP = ""
-
-	// Inject directly into playback phase
-	cfg.CachedControlURL = ep.ControlURL
-	cfg.CachedConnMgrURL = ep.ConnMgrURL
-
-	return true
-}
 
 func TrySSDP(cfg *models.Config) bool {
 	logger.Notify("Running SSDP discovery scan")
@@ -204,56 +144,4 @@ func TrySSDP(cfg *models.Config) bool {
 	}
 
 	return true
-}
-
-func probeAVTransport(cfg *models.Config) (bool, error) {
-	if cfg.TIP == "" {
-		return false, fmt.Errorf("probe requires -Tip")
-	}
-
-	logger.Notify("Probing AVTransport directly: %s", cfg.TIP)
-
-	target, err := Probe(cfg.TIP, 8*time.Second, cfg.DeepSearch)
-	if err != nil {
-		return false, err
-	}
-
-	observedActions := ValidateActions(*target)
-
-	// update cfg so playback can continue
-	cfg.CachedControlURL = target.ControlURL
-	info, err := identity.Enrich(
-		"http://"+cfg.TIP,
-		3*time.Second,
-	)
-	update := cache.Device{
-		ControlURL: target.ControlURL,
-		Vendor:     cfg.TVVendor,
-	}
-
-	if err == nil {
-		update.Identity = map[string]any{
-			"friendly_name": info.FriendlyName,
-			"manufacturer":  info.Manufacturer,
-			"model_name":    info.ModelName,
-			"model_number":  info.ModelNumber,
-			"udn":           info.UDN,
-			"presentation":  info.Presentation,
-		}
-	} else {
-		logger.Notify("%v", err)
-	}
-
-	if len(observedActions) > 0 {
-		update.Actions = observedActions
-	}
-
-	cache.StoreInCache(cfg, update)
-
-	logger.Done("AVTransport probe completed")
-
-	logger.Result(" IP        : %s", cfg.TIP)
-	logger.Result(" ControlURL: %s", target.ControlURL)
-
-	return true, nil
 }
