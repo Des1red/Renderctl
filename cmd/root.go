@@ -21,6 +21,19 @@ var noCache bool
 
 func Execute() {
 	parseFlags()
+	handleInstaller()
+	handleFlagsAndLogging()
+	handleInteraction()
+
+	stop, serverRunning := preRun()
+	internal.RunScript(&cfg)
+
+	if serverRunning {
+		waitForShutdown(stop)
+	}
+}
+
+func handleInstaller() {
 	// ---- INSTALLER (early exit) ----
 	if requirements.Install {
 		if err := requirements.RunInstaller(); err != nil {
@@ -28,7 +41,9 @@ func Execute() {
 		}
 		os.Exit(0)
 	}
+}
 
+func handleFlagsAndLogging() {
 	if bad, msg := badFlagUse(); bad {
 		logger.Error(msg)
 	}
@@ -50,7 +65,15 @@ func Execute() {
 	if cfg.SelectCache >= 0 {
 		cache.LoadCachedTV(&cfg)
 	}
+}
 
+func handleInteraction() {
+	if (cfg.Mode == "scan" && cfg.Discover) || (cfg.Mode != "scan" && !cfg.ProbeOnly) {
+		cfg.LIP = utils.LocalIP(cfg.LIP)
+	}
+}
+
+func preRun() (chan struct{}, bool) {
 	stop := make(chan struct{})
 	serverRunning := false
 
@@ -67,27 +90,25 @@ func Execute() {
 			}
 		}
 
-		cfg.LIP = utils.LocalIP(cfg.LIP)
-		if mode != "scan" && !cfg.ProbeOnly {
-			if mode != "stream" {
-				servers.InitDefaultServer(cfg, stop)
-			} else if mode == "stream" {
-				stream.InitStreamServer(&cfg, stop)
-			}
+		if mode != "stream" {
+			servers.InitDefaultServer(cfg, stop)
+		} else {
+			stream.InitStreamServer(&cfg, stop)
 		}
+
 		time.Sleep(500 * time.Millisecond)
 		serverRunning = true
 	}
 
-	internal.RunScript(&cfg)
+	return stop, serverRunning
+}
 
-	if !serverRunning {
-		return
-	}
-
+func waitForShutdown(stop chan struct{}) {
 	logger.Status("renderctl running — press Ctrl+C to exit")
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig
+
 	close(stop)
 }
