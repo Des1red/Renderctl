@@ -26,6 +26,7 @@ func Execute() {
 		if err := requirements.RunInstaller(); err != nil {
 			logger.Error("%v", err)
 		}
+		os.Exit(0)
 	}
 
 	if bad, msg := badFlagUse(); bad {
